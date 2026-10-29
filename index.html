@@ -10,28 +10,8 @@
 html,body { width:100%; height:100%; background:#000; overflow:hidden; font-family:"Jost",sans-serif; }
 #app, #app * { transition: color 1.5s ease, background-color 1.5s ease, border-color 1.5s ease, text-shadow 1.5s ease; }
 
-/* ---------- procedural sky ---------- */
-#sky { position:absolute; inset:0; transition:background 3s ease; }
-#sun { position:absolute; width:18vh; height:18vh; border-radius:50%; pointer-events:none;
-  background:radial-gradient(circle, rgba(255,236,170,.95) 0%, rgba(255,214,120,.55) 40%, rgba(255,214,120,0) 70%);
-  transform:translate(-50%,-50%); }
-#moonSky { position:absolute; width:11vh; height:11vh; pointer-events:none; transform:translate(-50%,-50%); display:none; }
-.particle { position:absolute; pointer-events:none; }
-.rainP { width:2px; height:3.2vh; background:linear-gradient(180deg, rgba(190,220,255,0), rgba(190,220,255,.55)); animation:rainfall linear infinite; }
-@keyframes rainfall { from { transform:translateY(-12vh); } to { transform:translateY(110vh); } }
-.snowP { border-radius:50%; background:rgba(255,255,255,.8); animation:snowfall linear infinite; }
-@keyframes snowfall { from { transform:translateY(-6vh) translateX(0); } to { transform:translateY(110vh) translateX(4vw); } }
-.fogP { height:16vh; width:120vw; left:-10vw; border-radius:50%; filter:blur(24px);
-  background:rgba(225,230,235,.28); animation:fogdrift ease-in-out infinite alternate; }
-@keyframes fogdrift { from { transform:translateX(-6vw); } to { transform:translateX(6vw); } }
-.cloudP { border-radius:50%; filter:blur(28px); background:rgba(255,255,255,.13); animation:drift linear infinite; }
-@keyframes drift { from { transform:translateX(-30vw); } to { transform:translateX(130vw); } }
-#sea { position:absolute; left:0; right:0; bottom:0; height:16vh; pointer-events:none; }
-#sea svg { width:100%; height:100%; }
-.waveA { animation:waveA 14s ease-in-out infinite alternate; }
-.waveB { animation:waveB 9s ease-in-out infinite alternate; }
-@keyframes waveA { from { transform:translateX(0); } to { transform:translateX(-8vw); } }
-@keyframes waveB { from { transform:translateX(-6vw); } to { transform:translateX(2vw); } }
+/* ---------- canvas scene ---------- */
+#scene { position:absolute; inset:0; }
 #scrim { position:absolute; inset:0; background:linear-gradient(180deg, rgba(2,8,20,.30) 0%, rgba(2,8,20,.12) 45%, rgba(2,8,20,.35) 100%); }
 #vignette { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, rgba(0,0,10,0) 55%, rgba(0,0,10,.32) 100%); }
 
@@ -90,8 +70,7 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #panel .close { position:absolute; top:1.5vh; right:2.5vw; font-size:3.4vh; color:#999; cursor:pointer; }
 
 /* ---------- night: same layout, red on black ---------- */
-body.night #sky, body.night #sun, body.night #moonSky, body.night #fx,
-body.night #sea, body.night #scrim, body.night #vignette { display:none; }
+body.night #scene, body.night #scrim, body.night #vignette { display:none; }
 body.night { background:#000; }
 body.night .card { background:#000; border-color:rgba(130,30,30,.35); backdrop-filter:none; -webkit-backdrop-filter:none; }
 body.night #time { color:#a52424; text-shadow:0 0 14px rgba(150,25,25,.35); }
@@ -119,11 +98,7 @@ body.night #music { color:#4a0d0d; }
 </style>
 </head>
 <body>
-  <div id="sky"></div>
-  <div id="sun"></div>
-  <svg id="moonSky" viewBox="0 0 100 100"></svg>
-  <div id="fx"></div>
-  <div id="sea"></div>
+  <canvas id="scene"></canvas>
   <div id="scrim"></div>
   <div id="vignette"></div>
 
@@ -235,7 +210,7 @@ function fetchWx(){
     +"&daily=sunrise,sunset,moon_phase,moonrise,moonset"
     +"&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
   fetch(u).then(function(r){ return r.json(); }).then(function(d){
-    W = d; renderWx(); applyBackground(); tick();
+    W = d; renderWx(); Scene.update(W); tick();
   }).catch(function(){});
 }
 function compass(deg){ var pts=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]; return pts[Math.round(deg/22.5)%16]; }
@@ -303,93 +278,387 @@ function renderWx(){
   $("moonLit").textContent = lit + "% lit";
 }
 
-/* ============ procedural sky ============ */
+/* ============ canvas scene engine ============ */
 function grp(c){ if (c<=1) return "clear"; if (c<=3) return "cloudy"; if (c<=48) return "fog"; if (c<=57) return "drizzle"; if (c<=67||c<=82) return "rain"; if (c<=86) return "snow"; return "storm"; }
-function applyBackground(){
-  if (isNight(new Date())) {
-    $("sun").style.display = "none";
-    $("moonSky").style.display = "none";
-    $("fx").innerHTML = "";
-    return;
-  }
-  if (!W) return;
-  var c = W.current, isDay = c.is_day===1, g = grp(c.weather_code);
-  var now = new Date();
-  var rise = W.daily ? new Date(W.daily.sunrise[0]) : null;
-  var set  = W.daily ? new Date(W.daily.sunset[0]) : null;
-  var duskEnd = set ? set.getTime()+S.sunsetOffset*60000 : null;
-  var duskStart = set ? set.getTime()-30*60000 : null;
 
-  /* sky gradient */
-  var sky;
-  var dusk = duskStart && duskEnd && now.getTime()>=duskStart && now.getTime()<duskEnd;
-  if (g==="clear" && dusk)      sky = "linear-gradient(180deg,#2b2a55 0%,#7a4a6e 55%,#e8955c 100%)";
-  else if (g==="clear" && isDay) sky = "linear-gradient(180deg,#2f6db8 0%,#6fa8d8 60%,#c4dff0 100%)";
-  else if (g==="clear" && !isDay) sky = "linear-gradient(180deg,#141c30 0%,#26354f 60%,#3d4d68 100%)";
-  else if (g==="cloudy")        sky = "linear-gradient(180deg,#5e6a78 0%,#8b97a2 60%,#b4bdc4 100%)";
-  else if (g==="fog")           sky = "linear-gradient(180deg,#98a1a8 0%,#b8bfc4 60%,#d3d8db 100%)";
-  else if (g==="snow")          sky = "linear-gradient(180deg,#8b96a5 0%,#b9c1cb 60%,#dfe4e9 100%)";
-  else                          sky = "linear-gradient(180deg,#3a4552 0%,#5c6875 60%,#8b95a0 100%)";
-  $("sky").style.background = sky;
+var Scene = (function(){
+  var cv = null, ctx = null, Wc = 1280, Hc = 800;
+  var running = false, rafId = 0, last = 0, acc = 0, t = 0;
+  var weather = null, night = true;
+  var clouds = [], rainP = [], snowP = [], stars = [], fogB = [];
+  var gradsKey = null;
+  var flash = 0, flashNext = 8, bolt = null;
+  var HORIZON = 0.66;
 
-  /* sun position along arc */
-  var sun = $("sun");
-  if (g==="clear" && rise && set && now>=rise && now<=set){
-    var f = (now - rise) / (set - rise);
-    var x = (8 + f*84);
-    var y = 62 - Math.sin(f*Math.PI)*48;
-    sun.style.left = x+"%"; sun.style.top = y+"%";
-    sun.style.display = "block";
-  } else if (g==="clear" && duskEnd && now>set && now<=duskEnd){
-    /* after sunset: slide right and sink behind the sea, off the right edge */
-    var fd = (now - set) / (duskEnd - set);
-    var x2 = 92 + fd*16;
-    var y2 = 60 + fd*28;
-    if (x2 > 112 || y2 > 96) { sun.style.display = "none"; }
-    else { sun.style.left = x2+"%"; sun.style.top = y2+"%"; sun.style.display = "block"; }
-  } else { sun.style.display = "none"; }
+  function mix(a,b,f){ return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f]; }
+  function rgb(c,a){ return "rgba("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+","+(a===undefined?1:a)+")"; }
+  function hx(h){ return [parseInt(h.substr(1,2),16), parseInt(h.substr(3,2),16), parseInt(h.substr(5,2),16)]; }
+  function blendP(a,b,f){ return { top:mix(a.top,b.top,f), mid:mix(a.mid,b.mid,f), hor:mix(a.hor,b.hor,f) }; }
 
-  /* moon in sky (clear evenings during day-mode window) */
-  var ms = $("moonSky");
-  var mRise = W.daily.moonrise[0] ? new Date(W.daily.moonrise[0]) : null;
-  var mSet  = W.daily.moonset[0] ? new Date(W.daily.moonset[0]) : null;
-  var moonUp = mRise && now >= mRise && (!mSet || now < mSet);
-  if (g==="clear" && moonUp){
-    ms.style.display = "block";
-    ms.style.left = "48%"; ms.style.top = "15%";
-    ms.innerHTML = moonSVG(W.daily.moon_phase[0]);
-  } else { ms.style.display = "none"; }
+  var PAL = {
+    dawn:    { top:hx("#2c3e6b"), mid:hx("#8a6a8f"), hor:hx("#f4a259") },
+    morning: { top:hx("#3a7bc8"), mid:hx("#7db4de"), hor:hx("#cfe6f5") },
+    midday:  { top:hx("#2f6db8"), mid:hx("#6fa8d8"), hor:hx("#c9e2f2") },
+    golden:  { top:hx("#3d5a80"), mid:hx("#c98a6b"), hor:hx("#ffb26b") },
+    sunset:  { top:hx("#2b2a55"), mid:hx("#8a4a6e"), hor:hx("#ff9d5c") },
+    deep:    { top:hx("#191a33"), mid:hx("#33315c"), hor:hx("#5a4468") },
+    late:    { top:hx("#0d1020"), mid:hx("#1c1f38"), hor:hx("#33284a") },
+    overcast:{ top:hx("#5e6a78"), mid:hx("#8b97a2"), hor:hx("#b4bdc4") },
+    fog:     { top:hx("#98a1a8"), mid:hx("#b8bfc4"), hor:hx("#d3d8db") },
+    snow:    { top:hx("#8b96a5"), mid:hx("#b9c1cb"), hor:hx("#dfe4e9") },
+    rain:    { top:hx("#3a4552"), mid:hx("#5c6875"), hor:hx("#8b95a0") }
+  };
 
-  /* particles */
-  var fx = $("fx"); fx.innerHTML = "";
-  function mk(cls, n, gen){ for (var i=0;i<n;i++){ var e=document.createElement("div"); e.className=cls; gen(e,i); fx.appendChild(e); } }
-  if (g==="rain"||g==="drizzle"||g==="storm"){
-    mk("particle rainP", 46, function(e){ e.style.left=(Math.random()*100)+"vw"; e.style.top=(-10+Math.random()*60)+"vh";
-      e.style.animationDuration=(0.9+Math.random()*0.8)+"s"; e.style.animationDelay=-(Math.random()*2)+"s"; });
-  }
-  if (g==="snow"){
-    mk("particle snowP", 60, function(e){ var s2=(2+Math.random()*4); e.style.width=s2+"px"; e.style.height=s2+"px";
-      e.style.left=(Math.random()*100)+"vw"; e.style.top=(-10+Math.random()*60)+"vh";
-      e.style.animationDuration=(7+Math.random()*8)+"s"; e.style.animationDelay=-(Math.random()*10)+"s";
-      e.style.opacity=.5+Math.random()*.5; });
-  }
-  if (g==="fog"){
-    mk("fogP", 4, function(e,i2){ e.style.top=(8+i2*20)+"vh"; e.style.animationDuration=(10+i2*6)+"s"; });
-  }
-  if (g==="cloudy"||g==="clear"){
-    mk("cloudP", 3, function(e,i2){ e.style.width=(24+i2*14)+"vw"; e.style.height=(7+i2*3)+"vh";
-      e.style.top=(6+i2*17)+"vh"; e.style.animationDuration=(70+i2*45)+"s"; e.style.animationDelay=-(i2*22)+"s";
-      if (g==="clear" && i2>0) e.style.opacity=.5; });
+  function skyPal(now){
+    var g = grp(weather && weather.current ? weather.current.weather_code : 3);
+    if (g !== "clear") return (g==="fog")?PAL.fog:(g==="snow")?PAL.snow:(g==="rain"||g==="storm")?PAL.rain:PAL.overcast;
+    if (!weather || !weather.daily) return PAL.midday;
+    var rise = new Date(weather.daily.sunrise[0]).getTime();
+    var set  = new Date(weather.daily.sunset[0]).getTime();
+    var n = now.getTime();
+    var duskEnd = set + S.sunsetOffset*60000;
+    if (n < rise) return PAL.dawn;
+    if (n <= set){
+      var p = (n - rise)/(set - rise);
+      if (p<0.15) return blendP(PAL.dawn, PAL.morning, p/0.15);
+      if (p<0.4)  return blendP(PAL.morning, PAL.midday, (p-0.15)/0.25);
+      if (p<0.72) return PAL.midday;
+      if (p<0.9)  return blendP(PAL.midday, PAL.golden, (p-0.72)/0.18);
+      return blendP(PAL.golden, PAL.sunset, (p-0.9)/0.1);
+    }
+    if (n <= duskEnd){
+      var q = (n - set)/(duskEnd - set);
+      if (q<0.5) return blendP(PAL.sunset, PAL.deep, q/0.5);
+      return blendP(PAL.deep, PAL.late, (q-0.5)/0.5);
+    }
+    return PAL.late;
   }
 
-  /* sea silhouette */
-  $("sea").innerHTML =
-    '<svg viewBox="0 0 1000 160" preserveAspectRatio="none">'
-    + '<path class="waveA" d="M0 60 Q 125 40 250 60 T 500 60 T 750 60 T 1000 60 V160 H0 Z" fill="rgba(16,28,44,.55)"/>'
-    + '<path class="waveB" d="M0 90 Q 125 74 250 90 T 500 90 T 750 90 T 1000 90 V160 H0 Z" fill="rgba(10,20,34,.75)"/>'
-    + '<path d="M0 120 Q 250 108 500 120 T 1000 120 V160 H0 Z" fill="rgba(6,13,24,.92)"/>'
-    + '</svg>';
-}
+  function makeClouds(){
+    clouds = [];
+    var layers = [{n:4,s:.5,a:.4,dy:.06},{n:4,s:1,a:.6,dy:.16},{n:3,s:1.6,a:.8,dy:.30}];
+    for (var L=0;L<layers.length;L++){
+      var ly = layers[L];
+      for (var i=0;i<ly.n;i++){
+        var puffs = [];
+        var np = 5+Math.floor(Math.random()*4);
+        for (var p=0;p<np;p++){
+          puffs.push({ dx:(p-np/2)*15+(Math.random()*10-5), dy:(Math.random()*14-7)-Math.abs(p-np/2)*2, r:10+Math.random()*10 });
+        }
+        clouds.push({ x:Math.random()*1.4-0.2, y:ly.dy+Math.random()*0.12, s:ly.s, a:ly.a, spd:(0.005+Math.random()*0.005)*ly.s, puffs:puffs });
+      }
+    }
+    gradsKey = null;
+  }
+  function makeStars(){
+    stars = [];
+    for (var i=0;i<90;i++) stars.push({ x:Math.random(), y:Math.random()*HORIZON*0.85, r:Math.random()*1.2+0.4, ph:Math.random()*6.28, sp:1+Math.random()*2 });
+  }
+  function makeRain(){
+    rainP = [];
+    var n = (weather && grp(weather.current.weather_code)==="drizzle") ? 40 : 85;
+    for (var i=0;i<n;i++) rainP.push({ x:Math.random(), y:Math.random(), v:620+Math.random()*420, l:14+Math.random()*16 });
+  }
+  function makeSnow(){
+    snowP = [];
+    for (var i=0;i<75;i++) snowP.push({ x:Math.random(), y:Math.random(), v:26+Math.random()*44, r:1.4+Math.random()*2.4, ph:Math.random()*6.28 });
+  }
+
+  function ensureGrads(tint){
+    var key = Math.round(tint[0])+","+Math.round(tint[1])+","+Math.round(tint[2]);
+    if (gradsKey === key) return;
+    gradsKey = key;
+    for (var i=0;i<clouds.length;i++){
+      var cl = clouds[i];
+      for (var p=0;p<cl.puffs.length;p++){
+        var pf = cl.puffs[p];
+        var g2 = ctx.createRadialGradient(pf.dx, pf.dy, 0, pf.dx, pf.dy, pf.r*1.55);
+        g2.addColorStop(0, rgb(tint, .85));
+        g2.addColorStop(1, rgb(tint, 0));
+        pf.grad = g2;
+      }
+    }
+  }
+
+  function sunPos(now){
+    if (!weather || !weather.daily) return null;
+    var rise = new Date(weather.daily.sunrise[0]).getTime();
+    var set  = new Date(weather.daily.sunset[0]).getTime();
+    var n = now.getTime();
+    var g = grp(weather.current.weather_code);
+    if (g !== "clear") return null;
+    if (n >= rise && n <= set){
+      var p = (n - rise)/(set - rise);
+      return { x:(0.08+p*0.84)*Wc, y:Hc*(0.62 - Math.sin(p*Math.PI)*0.48), up:true, p:p };
+    }
+    var duskEnd = set + S.sunsetOffset*60000;
+    if (n > set && n <= duskEnd){
+      var fd = (n - set)/(duskEnd - set);
+      return { x:(0.92+fd*0.16)*Wc, y:Hc*(0.60+fd*0.30), up:fd<0.55, setting:true };
+    }
+    return null;
+  }
+  function moonPos(now){
+    if (!weather || !weather.daily) return null;
+    var g = grp(weather.current.weather_code);
+    if (g !== "clear") return null;
+    var mRise = weather.daily.moonrise[0] ? new Date(weather.daily.moonrise[0]) : null;
+    var mSet  = weather.daily.moonset[0] ? new Date(weather.daily.moonset[0]) : null;
+    var up = mRise && now >= mRise && (!mSet || now < mSet);
+    if (!up) return null;
+    return { x:0.48*Wc, y:0.15*Hc, p:weather.daily.moon_phase[0] };
+  }
+
+  function drawSky(pal){
+    var g2 = ctx.createLinearGradient(0,0,0,Hc*HORIZON*1.15);
+    g2.addColorStop(0, rgb(pal.top));
+    g2.addColorStop(0.62, rgb(pal.mid));
+    g2.addColorStop(1, rgb(pal.hor));
+    ctx.fillStyle = g2;
+    ctx.fillRect(0,0,Wc,Hc);
+  }
+  function drawStars(f){
+    if (f<=0.02) return;
+    for (var i=0;i<stars.length;i++){
+      var s2 = stars[i];
+      var a = f*(0.35+0.65*Math.abs(Math.sin(t*s2.sp+s2.ph)));
+      ctx.fillStyle = "rgba(255,255,240,"+a.toFixed(3)+")";
+      ctx.beginPath(); ctx.arc(s2.x*Wc, s2.y*Hc, s2.r, 0, 6.283); ctx.fill();
+    }
+  }
+  function drawSun(sp, elev, pal){
+    if (!sp || !sp.up) return;
+    var warm = mix([255,240,190],[255,150,80], Math.max(0,1-elev*1.6));
+    var gr = Hc*0.20;
+    var g2 = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, gr);
+    g2.addColorStop(0, rgb(warm,.5));
+    g2.addColorStop(1, rgb(warm,0));
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(sp.x, sp.y, gr, 0, 6.283); ctx.fill();
+    var rd = Hc*0.026;
+    var g3 = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, rd);
+    g3.addColorStop(0, "rgba(255,250,230,1)");
+    g3.addColorStop(1, rgb(warm,.95));
+    ctx.fillStyle = g3; ctx.beginPath(); ctx.arc(sp.x, sp.y, rd, 0, 6.283); ctx.fill();
+  }
+  function drawMoon(mp){
+    if (!mp) return;
+    var r = Hc*0.05;
+    var g2 = ctx.createRadialGradient(mp.x, mp.y, r*0.4, mp.x, mp.y, r*2.6);
+    g2.addColorStop(0, "rgba(210,225,245,.28)");
+    g2.addColorStop(1, "rgba(210,225,245,0)");
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(mp.x, mp.y, r*2.6, 0, 6.283); ctx.fill();
+    ctx.fillStyle = "#141b26"; ctx.beginPath(); ctx.arc(mp.x, mp.y, r, 0, 6.283); ctx.fill();
+    var lit = new Path2D(litPath(mp.p, r*0.92, mp.x, mp.y, mp.p<0.5, mp.p>0.25 && mp.p<0.75));
+    ctx.fillStyle = "#cfd8e6"; ctx.fill(lit);
+  }
+  function drawClouds(dt, alphaMul, maxN){
+    var n = Math.min(maxN, clouds.length);
+    for (var i=0;i<n;i++){
+      var cl = clouds[i];
+      cl.x += cl.spd*dt;
+      if (cl.x > 1.25) cl.x -= 1.5;
+      if (cl.x < -0.25) cl.x += 1.5;
+      ctx.save();
+      ctx.translate(cl.x*Wc, cl.y*Hc);
+      ctx.scale(cl.s, cl.s);
+      ctx.globalAlpha = cl.a*alphaMul;
+      for (var p=0;p<cl.puffs.length;p++){
+        var pf = cl.puffs[p];
+        ctx.beginPath(); ctx.arc(pf.dx, pf.dy, pf.r*1.55, 0, 6.283);
+        ctx.fillStyle = pf.grad; ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function drawRain(dt, wind){
+    var ang = Math.atan2(wind*0.35, 1);
+    for (var i=0;i<rainP.length;i++){
+      var r2 = rainP[i];
+      r2.y += r2.v*dt/Hc; r2.x += (wind*0.012)*dt;
+      if (r2.y > 1){ r2.y = -0.02; r2.x = Math.random(); }
+      if (r2.x > 1.02) r2.x -= 1.04; if (r2.x < -0.02) r2.x += 1.04;
+      var px = r2.x*Wc, py = r2.y*Hc;
+      ctx.strokeStyle = "rgba(190,220,255,.5)"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + ang*r2.l, py + r2.l); ctx.stroke();
+    }
+  }
+  function drawSnow(dt){
+    for (var i=0;i<snowP.length;i++){
+      var s2 = snowP[i];
+      s2.y += s2.v*dt/Hc; s2.x += Math.sin(t*1.3+s2.ph)*0.00035;
+      if (s2.y > 1){ s2.y = -0.02; s2.x = Math.random(); }
+      ctx.fillStyle = "rgba(240,246,252,.85)";
+      ctx.beginPath(); ctx.arc(s2.x*Wc, s2.y*Hc, s2.r, 0, 6.283); ctx.fill();
+    }
+  }
+  function drawFog(){
+    for (var i=0;i<4;i++){
+      var fx = ((t*(6+i*3) + i*400) % (Wc+700)) - 350;
+      var fy = Hc*(0.30+i*0.09);
+      var g2 = ctx.createRadialGradient(fx, fy, 0, fx, fy, 320);
+      g2.addColorStop(0, "rgba(228,233,238,.20)");
+      g2.addColorStop(1, "rgba(228,233,238,0)");
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.arc(fx, fy, 320, 0, 6.283); ctx.fill();
+    }
+  }
+  function drawLightning(dt){
+    flash = Math.max(0, flash - dt*2.2);
+    if (flash > 0){
+      ctx.fillStyle = "rgba(240,246,255,"+(flash*0.22)+")";
+      ctx.fillRect(0,0,Wc,Hc);
+      if (bolt){
+        ctx.strokeStyle = "rgba(250,250,255,"+(flash)+")"; ctx.lineWidth = 3;
+        ctx.shadowColor = "rgba(200,220,255,.9)"; ctx.shadowBlur = 18;
+        ctx.beginPath(); ctx.moveTo(bolt[0][0], bolt[0][1]);
+        for (var i=1;i<bolt.length;i++) ctx.lineTo(bolt[i][0], bolt[i][1]);
+        ctx.stroke(); ctx.shadowBlur = 0;
+      }
+    }
+    flashNext -= dt;
+    if (flashNext <= 0){
+      flashNext = 5+Math.random()*9; flash = 1;
+      var bx = Wc*(0.2+Math.random()*0.6), by = Hc*0.16;
+      bolt = [[bx,by]];
+      var cy2 = by;
+      while (cy2 < Hc*HORIZON){ cy2 += 30+Math.random()*40; bx += (Math.random()-0.5)*70; bolt.push([bx,cy2]); }
+    }
+  }
+  function drawSea(pal, elev, glitterX, glitterCol, glitterI){
+    var horY = Hc*HORIZON;
+    var wg = ctx.createLinearGradient(0, horY, 0, Hc);
+    var wtop = mix(mix(pal.hor, pal.mid, 0.4), [8,16,30], 0.45);
+    wg.addColorStop(0, rgb(wtop));
+    wg.addColorStop(1, "rgba(4,10,20,1)");
+    ctx.fillStyle = wg; ctx.fillRect(0, horY, Wc, Hc-horY);
+    if (glitterX >= 0 && glitterI > 0){
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      for (var g3=0;g3<46;g3++){
+        var gy = horY + 8 + Math.random()*(Hc-horY-30);
+        var depth = (gy-horY)/(Hc-horY);
+        var gw = 16*(1-depth*0.35)*(0.3+Math.random()*0.7);
+        var gxx = glitterX + (Math.random()-0.5)*Wc*0.055*(1-depth*0.25);
+        ctx.strokeStyle = rgb(glitterCol, Math.random()*0.32*glitterI);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(gxx-gw, gy); ctx.lineTo(gxx+gw, gy); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    for (var i=0;i<4;i++){
+      var baseY = horY + 8 + i*(Hc-horY-14)/4;
+      var amp = 3+i*1.6;
+      var spd = (i%2? -1:1)*(0.9+i*0.5);
+      ctx.beginPath();
+      for (var x=0;x<=Wc;x+=26){
+        var y = baseY + Math.sin(x*0.011 + t*spd + i*2.1)*amp;
+        if (x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = rgb(mix(pal.hor,[255,255,255],0.5), 0.10+0.10*elev);
+      ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.lineTo(Wc,Hc); ctx.lineTo(0,Hc); ctx.closePath();
+      ctx.fillStyle = "rgba(5,12,22,"+(0.30+i*0.18)+")"; ctx.fill();
+    }
+  }
+  function drawLighthouse(pal){
+    var lx = Wc*0.86, horY = Hc*HORIZON;
+    var hgt = Hc*0.085;
+    ctx.fillStyle = "rgba(8,15,26,.85)";
+    ctx.beginPath();
+    ctx.moveTo(lx-9, horY); ctx.lineTo(lx-4.5, horY-hgt); ctx.lineTo(lx+4.5, horY-hgt); ctx.lineTo(lx+9, horY); ctx.closePath(); ctx.fill();
+    ctx.fillRect(lx-6, horY-hgt-8, 12, 9);
+    var blink = (t % 7) < 0.55 ? 0.85 : 0.12;
+    ctx.fillStyle = "rgba(255,220,140,"+blink+")";
+    ctx.beginPath(); ctx.arc(lx, horY-hgt-4, 3.4, 0, 6.283); ctx.fill();
+  }
+
+  function update(dt){
+    t += dt;
+    for (var i=0;i<rainP.length;i++){
+      var r2 = rainP[i]; r2.y += r2.v*dt/Hc;
+      if (r2.y > 1.02){ r2.y = -0.03; r2.x = Math.random(); }
+    }
+    for (var j=0;j<snowP.length;j++){
+      var s3 = snowP[j]; s3.y += s3.v*dt/Hc; s3.x += Math.sin(t*1.3+s3.ph)*0.0004;
+      if (s3.y > 1.02){ s3.y = -0.03; s3.x = Math.random(); }
+    }
+    flash = Math.max(0, flash - dt*2.2);
+    flashNext -= dt;
+    if (flashNext <= 0){
+      flashNext = 5+Math.random()*9; flash = 1;
+      var bx = Wc*(0.2+Math.random()*0.6), by = Hc*0.16, cy2 = by;
+      bolt = [[bx,by]];
+      while (cy2 < Hc*HORIZON){ cy2 += 30+Math.random()*40; bx += (Math.random()-0.5)*70; bolt.push([bx,cy2]); }
+    }
+  }
+
+  function render(){
+    if (!ctx) return;
+    var now = new Date();
+    var pal = skyPal(now);
+    var c = weather ? weather.current : null;
+    var g = grp(c ? c.weather_code : 3);
+    var isDay = c ? c.is_day===1 : true;
+    var elev = 0;
+    var rise = weather&&weather.daily ? new Date(weather.daily.sunrise[0]).getTime() : null;
+    var set = weather&&weather.daily ? new Date(weather.daily.sunset[0]).getTime() : null;
+    var n = now.getTime();
+    if (rise && set && n>=rise && n<=set) elev = Math.sin(((n-rise)/(set-rise))*Math.PI);
+    var sp = sunPos(now), mp = moonPos(now);
+    drawSky(pal);
+    var duskF = 0;
+    if (set){
+      var duskEnd = set + S.sunsetOffset*60000;
+      if (n > set) duskF = Math.min(1, (n-set)/(duskEnd-set));
+    }
+    drawStars(duskF*0.9);
+    drawSun(sp, elev, pal);
+    drawMoon(mp);
+    var alphaMul = (g==="rain"||g==="storm") ? 0.9 : (g==="cloudy") ? 0.85 : (g==="snow") ? 0.7 : (g==="fog") ? 0.4 : 0.75;
+    var maxN = (g==="clear") ? 5 : (g==="fog") ? 2 : 11;
+    var tint = (g==="rain"||g==="storm") ? [52,62,78] : (g==="snow") ? [225,232,240] : mix([252,253,255], pal.mid, 0.18);
+    ensureGrads(tint);
+    drawClouds(1/30, alphaMul, maxN);
+    if (g==="fog") drawFog();
+    var wind = c ? c.wind_speed_10m : 4;
+    if (g==="rain"||g==="drizzle"||g==="storm") drawRain(1/30, wind);
+    if (g==="snow") drawSnow(1/30);
+    if (g==="storm") drawLightning(1/30);
+    var glitterX = -1, glitterCol = [255,230,170], glitterI = 0;
+    if (sp && sp.up){ glitterX = sp.x; glitterCol = [255,232,175]; glitterI = (g==="clear")?1:(g==="cloudy")?0.35:0.15; }
+    else if (mp){ glitterX = mp.x; glitterCol = [205,220,240]; glitterI = (g==="clear")?0.8:0.25; }
+    drawSea(pal, elev, glitterX, glitterCol, glitterI);
+    drawLighthouse(pal);
+  }
+
+  function frame(ts){
+    rafId = requestAnimationFrame(frame);
+    if (!last) last = ts;
+    var dt = Math.min(0.05, (ts-last)/1000); last = ts;
+    acc += dt; if (acc < 1/31) return;
+    var step = acc; acc = 0;
+    update(step); render();
+  }
+
+  function start(){ if (!running){ running = true; last = 0; acc = 0; rafId = requestAnimationFrame(frame); } }
+  function stop(){ if (rafId){ cancelAnimationFrame(rafId); rafId = 0; } running = false; }
+
+  return {
+    init: function(){
+      if (cv) return;
+      cv = document.getElementById("scene");
+      Wc = cv.width = window.innerWidth;
+      Hc = cv.height = window.innerHeight;
+      ctx = cv.getContext("2d");
+      makeClouds(); makeStars(); makeRain(); makeSnow();
+    },
+    update: function(w){ weather = w; this.init(); makeRain(); },
+    setNight: function(n){
+      night = n;
+      if (n) stop(); else { this.init(); start(); }
+    }
+  };
+})();
 
 /* ============ tides: wave ============ */
 var T = null;
@@ -514,13 +783,11 @@ function renderClock(){
 }
 setInterval(renderClock,1000);
 setInterval(function(){ if (T) renderTides(); }, 120000);
-setInterval(function(){ if (W) applyBackground(); }, 60000);
 
 function tick(){
   var d=new Date();
-  var night = isNight(d);
-  document.body.classList.toggle("night", night);
-  if (night) { $("sun").style.display="none"; $("moonSky").style.display="none"; }
+  Scene.setNight(isNight(d));
+  document.body.classList.toggle("night", isNight(d));
 }
 setInterval(tick, 20000);
 
@@ -545,11 +812,12 @@ $("sSave").addEventListener("click", function(){
   S.mode=$("sMode").value; S.dayStart=$("sDayStart").value||"07:00"; S.dayEnd=$("sDayEnd").value||"20:00";
   S.sunsetOffset=+$("sSunsetOffset").value||0; S.lat=$("sLat").value; S.lon=$("sLon").value;
   S.tideStation=$("sTideStation").value.trim(); S.stream=$("sStream").value.trim();
-  save(); $("panel").classList.remove("open"); $("music").style.display = S.stream ? "flex" : "none"; T=null; fetchWx(); fetchTides(); tick(); applyBackground();
+  save(); $("panel").classList.remove("open"); $("music").style.display = S.stream ? "flex" : "none"; T=null; fetchWx(); fetchTides(); tick();
 });
 
 /* ============ boot ============ */
 if (S.stream) $("music").style.display = "flex";
+Scene.init();
 renderClock(); tick(); fetchWx(); fetchTides();
 setInterval(fetchWx, 20*60*1000); setInterval(fetchTides, 60*60*1000);
 (function(){ var d=new Date(), n=new Date(d); n.setHours(4,0,0,0); if (n<=d) n.setDate(n.getDate()+1); setTimeout(function(){ location.reload(); }, n-d); })();
