@@ -110,7 +110,7 @@ body.night #music { color:#4a0d0d; }
         <div id="date"></div>
       </div>
       <div id="condBox">
-        <div id="condTempRow"><span id="condIcon"></span><span id="condTemp">--°</span></div>
+        <div id="condTempRow"><span id="condTemp">--°</span></div>
         <div id="condTxt"></div>
         <div id="condWind"></div>
         <div id="condFeels"></div>
@@ -167,7 +167,6 @@ body.night #music { color:#4a0d0d; }
     <button id="sSave">Save</button>
     <p id="credits">Weather: Open-Meteo. Tides: NOAA CO-OPS. Weather icons: Meteocons by Bas Milius (basmilius.github.io). Sky and scenery rendered locally.</p>
   </div>
-<script src="js/lottie_light.min.js?v=4"></script>
 <script src="photos.js?v=4"></script>
 <script>
 "use strict";
@@ -266,7 +265,6 @@ function renderWx(){
   var c = W.current, isDay = c.is_day===1;
   $("condTemp").textContent = Math.round(c.temperature_2m)+"°";
   $("condTxt").textContent = wxName(c.weather_code);
-  showIcon(c.weather_code, isDay);
   $("condWind").textContent = compass(c.wind_direction_10m)+" "+Math.round(c.wind_speed_10m)+" mph · Gusts "+Math.round(c.wind_gusts_10m);
   $("condFeels").textContent = "Feels like "+Math.round(c.apparent_temperature)+"°";
   $("sunriseT").textContent = to12(W.daily.sunrise[0]);
@@ -692,26 +690,32 @@ var Scene = (function(){
     ctx.moveTo(lx-9, horY); ctx.lineTo(lx-4.5, horY-hgt); ctx.lineTo(lx+4.5, horY-hgt); ctx.lineTo(lx+9, horY); ctx.closePath(); ctx.fill();
     ctx.fillRect(lx-6, horY-hgt-8, 12, 9);
     var lampX = lx, lampY = horY-hgt-4;
-    /* rotating beam: the glow pans side to side on a 7-second cycle */
-    var a = Math.PI/2 + Math.sin(2*Math.PI*t/7)*(Math.PI/2.15);
-    var len = Wc*0.20;
-    ctx.save();
-    ctx.translate(lampX, lampY);
-    ctx.rotate(-a);
-    var bg2 = ctx.createLinearGradient(0,0,len,0);
-    bg2.addColorStop(0, "rgba(255,228,150,.40)");
-    bg2.addColorStop(0.55, "rgba(255,228,150,.15)");
-    bg2.addColorStop(1, "rgba(255,228,150,0)");
-    ctx.fillStyle = bg2;
-    ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(len,-26); ctx.lineTo(len,26); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    var k = 0.55 + 0.45*Math.abs(Math.sin(2*Math.PI*t/7));
+    /* beam: sweeps left to right over 3s, then dark for 7s. 50% intensity */
+    var cyc = 10, sweep = 3;
+    var t10 = t % cyc;
+    if (t10 < sweep){
+      var f2 = t10 / sweep;
+      var a = Math.PI - f2*Math.PI;
+      var ramp = Math.sin(f2*Math.PI);
+      var len = Wc*0.20;
+      ctx.save();
+      ctx.translate(lampX, lampY);
+      ctx.rotate(-a);
+      var bg2 = ctx.createLinearGradient(0,0,len,0);
+      bg2.addColorStop(0, "rgba(255,228,150,"+(0.20*ramp).toFixed(3)+")");
+      bg2.addColorStop(0.55, "rgba(255,228,150,"+(0.075*ramp).toFixed(3)+")");
+      bg2.addColorStop(1, "rgba(255,228,150,0)");
+      ctx.fillStyle = bg2;
+      ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(len,-26); ctx.lineTo(len,26); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    var k = 0.5 + 0.5*Math.abs(Math.sin(2*Math.PI*t/cyc));
     var g2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, 26);
-    g2.addColorStop(0, "rgba(255,225,150,"+(0.55*k).toFixed(3)+")");
+    g2.addColorStop(0, "rgba(255,225,150,"+(0.30*k).toFixed(3)+")");
     g2.addColorStop(1, "rgba(255,225,150,0)");
     ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(lampX, lampY, 26, 0, 6.283); ctx.fill();
-    ctx.fillStyle = "rgba(255,240,190,.95)";
-    ctx.beginPath(); ctx.arc(lampX, lampY, 3.4, 0, 6.283); ctx.fill();
+    ctx.fillStyle = "rgba(255,240,190,.85)";
+    ctx.beginPath(); ctx.arc(lampX, lampY, 3.2, 0, 6.283); ctx.fill();
   }
 
   function update(dt){
