@@ -454,27 +454,6 @@ var Scene = (function(){
       ctx.beginPath(); ctx.ellipse(px+lean*0.4, baseY+1, 7-i, 2, 0, 0, 6.283); ctx.stroke();
     }
   }
-  function drawShooting(dt){
-    shootNext -= dt;
-    if (!shoot && shootNext <= 0 && night === false){
-      shootNext = 18+Math.random()*26;
-      var sx2 = Wc*(0.15+Math.random()*0.6), sy2 = Hc*(0.04+Math.random()*0.14);
-      var dir = Math.random()<0.5 ? 1 : -1;
-      shoot = { x:sx2, y:sy2, dx:dir*(240+Math.random()*220), dy:130+Math.random()*90, life:0.85, max:0.85 };
-    }
-    if (shoot){
-      shoot.life -= dt;
-      if (shoot.life <= 0){ shoot = null; return; }
-      shoot.x += shoot.dx*dt; shoot.y += shoot.dy*dt;
-      var f = shoot.life/shoot.max;
-      var tailX = shoot.x - shoot.dx*0.16, tailY = shoot.y - shoot.dy*0.16;
-      var tg = ctx.createLinearGradient(shoot.x, shoot.y, tailX, tailY);
-      tg.addColorStop(0, "rgba(255,255,245,"+(0.9*f)+")");
-      tg.addColorStop(1, "rgba(255,255,245,0)");
-      ctx.strokeStyle = tg; ctx.lineWidth = 2.2; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(shoot.x, shoot.y); ctx.lineTo(tailX, tailY); ctx.stroke();
-    }
-  }
   function makeStars(){
     stars = [];
     for (var i=0;i<90;i++) stars.push({ x:Math.random(), y:Math.random()*HORIZON*0.85, r:Math.random()*1.2+0.4, ph:Math.random()*6.28, sp:1+Math.random()*2 });
@@ -712,9 +691,27 @@ var Scene = (function(){
     ctx.beginPath();
     ctx.moveTo(lx-9, horY); ctx.lineTo(lx-4.5, horY-hgt); ctx.lineTo(lx+4.5, horY-hgt); ctx.lineTo(lx+9, horY); ctx.closePath(); ctx.fill();
     ctx.fillRect(lx-6, horY-hgt-8, 12, 9);
-    var blink = (t % 7) < 0.55 ? 0.85 : 0.12;
-    ctx.fillStyle = "rgba(255,220,140,"+blink+")";
-    ctx.beginPath(); ctx.arc(lx, horY-hgt-4, 3.4, 0, 6.283); ctx.fill();
+    var lampX = lx, lampY = horY-hgt-4;
+    /* rotating beam: the glow pans side to side on a 7-second cycle */
+    var a = Math.PI/2 + Math.sin(2*Math.PI*t/7)*(Math.PI/2.15);
+    var len = Wc*0.20;
+    ctx.save();
+    ctx.translate(lampX, lampY);
+    ctx.rotate(-a);
+    var bg2 = ctx.createLinearGradient(0,0,len,0);
+    bg2.addColorStop(0, "rgba(255,228,150,.40)");
+    bg2.addColorStop(0.55, "rgba(255,228,150,.15)");
+    bg2.addColorStop(1, "rgba(255,228,150,0)");
+    ctx.fillStyle = bg2;
+    ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(len,-26); ctx.lineTo(len,26); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    var k = 0.55 + 0.45*Math.abs(Math.sin(2*Math.PI*t/7));
+    var g2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, 26);
+    g2.addColorStop(0, "rgba(255,225,150,"+(0.55*k).toFixed(3)+")");
+    g2.addColorStop(1, "rgba(255,225,150,0)");
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(lampX, lampY, 26, 0, 6.283); ctx.fill();
+    ctx.fillStyle = "rgba(255,240,190,.95)";
+    ctx.beginPath(); ctx.arc(lampX, lampY, 3.4, 0, 6.283); ctx.fill();
   }
 
   function update(dt){
@@ -811,7 +808,6 @@ var Scene = (function(){
       if (n > set) duskF = Math.min(1, (n-set)/(duskEnd-set));
     }
     drawStars(duskF*0.9);
-    drawShooting(1/30);
     drawSun(sp, elev, pal);
     drawMoon(mp);
     var alphaMul = (g==="rain"||g==="storm") ? 0.9 : (g==="cloudy") ? 0.85 : (g==="snow") ? 0.7 : (g==="fog") ? 0.4 : 0.75;
