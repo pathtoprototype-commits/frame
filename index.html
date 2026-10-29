@@ -293,10 +293,19 @@ function renderWx(){
   var wEl = $("windSvg");
   if (wEl){
     var east = -Math.sin(c.wind_direction_10m*Math.PI/180);
-    wEl.style.transform = east < 0 ? "scaleX(-1)" : "none";
-    var dur = Math.max(0.7, 2.1 - c.wind_speed_10m*0.10).toFixed(2)+"s";
+    var south = Math.cos(c.wind_direction_10m*Math.PI/180);
+    var flip = east < 0;
+    var tilt = Math.max(-18, Math.min(18, Math.atan2(south, Math.abs(east)+0.001)*57.3*(east<0?-1:1)));
+    var gu = Math.max(0, (c.wind_gusts_10m||0) - c.wind_speed_10m);
+    var eff = c.wind_speed_10m + gu*0.5;
+    var set2 = eff < 7 ? { d:"22 30", sy:0.72 } : (eff < 14 ? { d:"16 20", sy:1 } : { d:"12 9", sy:1.16 });
+    wEl.style.transform = (flip ? "scaleX(-1) " : "") + "rotate("+tilt.toFixed(1)+"deg)";
+    var dur = Math.max(0.6, 2.1 - eff*0.10).toFixed(2)+"s";
     var wls = wEl.querySelectorAll(".wl");
-    for (var wi=0;wi<wls.length;wi++) wls[wi].style.animationDuration = dur;
+    for (var wi=0;wi<wls.length;wi++){
+      wls[wi].style.animationDuration = dur;
+      wls[wi].style.strokeDasharray = set2.d;
+    }
   }
   $("windText").textContent = compass(c.wind_direction_10m)+" "+Math.round(c.wind_speed_10m)+" mph · Gusts "+Math.round(c.wind_gusts_10m);
   $("condFeels").textContent = "Feels like "+Math.round(c.apparent_temperature)+"°";
@@ -368,19 +377,19 @@ var Scene = (function(){
     return PAL.late;
   }
 
+  var CLOUD_SHAPES = [
+    [ {x:.70,w:.15,peak:.16,val:.46}, {x:.46,w:.17,peak:.08,val:.44}, {x:.20,w:.14,peak:.24,val:.52} ],
+    [ {x:.74,w:.13,peak:.20,val:.48}, {x:.52,w:.15,peak:.14,val:.46}, {x:.30,w:.15,peak:.20,val:.50}, {x:.10,w:.10,peak:.38,val:.56} ],
+    [ {x:.66,w:.16,peak:.26,val:.48}, {x:.38,w:.16,peak:.18,val:.46} ]
+  ];
+  var SW = 460, SH = 260, sprites = null, spriteKey = null;
   function makeClouds(){
     clouds = [];
     var layers = [{n:4,s:.5,a:.42,dy:.06},{n:4,s:1,a:.62,dy:.16},{n:3,s:1.6,a:.82,dy:.30}];
     for (var L=0;L<layers.length;L++){
       var ly = layers[L];
       for (var i=0;i<ly.n;i++){
-        var puffs = [];
-        var np = 6+Math.floor(Math.random()*4);
-        for (var p=0;p<np;p++){
-          var spread = (p-np/2);
-          puffs.push({ dx:spread*16+(Math.random()*10-5), dy:(Math.random()*13-6.5)-Math.abs(spread)*1.6, r:11+Math.random()*11 });
-        }
-        clouds.push({ x:Math.random()*1.4-0.2, y:ly.dy+Math.random()*0.12, s:ly.s, a:ly.a, spd:(0.005+Math.random()*0.005)*ly.s, puffs:puffs, lit:0, grKey:"" });
+        clouds.push({ x:Math.random()*1.4-0.2, y:ly.dy+Math.random()*0.12, s:ly.s, a:ly.a, spd:(0.005+Math.random()*0.005)*ly.s, v:(clouds.length%3) });
       }
     }
   }
@@ -393,37 +402,55 @@ var Scene = (function(){
     if (g==="snow"){ lit = mix(lit,[235,240,248],0.6); base = mix(base,[215,222,235],0.5); }
     return { lit:lit, base:base, shade:shade, warmW:warmW };
   }
-  function cloudGrads(cl, tint, elev, g, sunX){
-    var clCx = cl.x*Wc + 60*cl.s;
-    var litDir = sunX === null ? 0 : (sunX > clCx ? 1 : -1);
-    var key = Math.round(elev*6)+"|"+litDir+"|"+Math.round(cl.s*10)+"|"+cl.puffs.length+"|"+Math.round(tint[0])+"|"+Math.round(tint[2]);
-    if (cl.grKey === key) return;
-    cl.grKey = key;
+  function buildCloudSprites(elev, g){
+    var key = g+"|"+Math.round(elev*6);
+    if (spriteKey === key) return;
+    spriteKey = key;
     var cp = cloudPalette(elev, g);
-    var lx = litDir*0.34;
-    var ly = -(0.06+0.24*elev);
-    for (var p=0;p<cl.puffs.length;p++){
-      var pf = cl.puffs[p];
-      var g2 = ctx.createRadialGradient(pf.dx+lx*pf.r, pf.dy+ly*pf.r, pf.r*0.1, pf.dx, pf.dy, pf.r*1.5);
-      g2.addColorStop(0, rgb(cp.lit, .95));
-      g2.addColorStop(0.55, rgb(cp.base, .8));
-      g2.addColorStop(1, rgb(cp.shade, 0));
-      pf.grad = g2;
+    sprites = [];
+    for (var v=0;v<CLOUD_SHAPES.length;v++){
+      sprites.push([]);
+      for (var d2=0;d2<2;d2++){
+        var off = document.createElement("canvas"); off.width = SW; off.height = SH;
+        var o = off.getContext("2d");
+        o.shadowColor = "rgba(200,212,230,.30)"; o.shadowBlur = 14;
+        var bg2 = o.createLinearGradient(0, SH*0.24, 0, SH*0.82);
+        bg2.addColorStop(0, rgb(cp.lit));
+        bg2.addColorStop(0.55, rgb(cp.base));
+        bg2.addColorStop(1, rgb(cp.shade));
+        o.fillStyle = bg2;
+        drawCloudShape(o, v, SW, SH, d2===1);
+        o.fill();
+        o.shadowBlur = 0;
+        o.save(); o.clip();
+        var ax = d2===0 ? SW*0.70 : SW*0.30;
+        var ag = o.createRadialGradient(ax, SH*0.30, 0, ax, SH*0.30, SW*0.40);
+        ag.addColorStop(0, rgb(mix(cp.lit,[255,255,255],0.35), .45));
+        ag.addColorStop(1, "rgba(255,255,255,0)");
+        o.fillStyle = ag; o.fillRect(0,0,SW,SH);
+        var b3 = o.createLinearGradient(0, SH*0.58, 0, SH*0.82);
+        b3.addColorStop(0, "rgba(0,0,0,0)");
+        b3.addColorStop(1, rgb(cp.shade, .5));
+        o.fillStyle = b3; o.fillRect(0, SH*0.55, SW, SH*0.3);
+        o.restore();
+        sprites[v].push(off);
+      }
     }
   }
-  function drawCloudBases(g, alphaMul){
-    if (g!=="rain" && g!=="storm") return;
-    ctx.fillStyle = "rgba(30,36,56,"+(0.4*alphaMul)+")";
-    for (var i=0;i<clouds.length;i++){
-      var cl = clouds[i]; if (i>=10) break;
-      var baseY = 0;
-      for (var p=0;p<cl.puffs.length;p++) baseY = Math.max(baseY, cl.puffs[p].dy + cl.puffs[p].r*0.55);
-      ctx.save(); ctx.translate(cl.x*Wc, cl.y*Hc); ctx.scale(cl.s, cl.s);
-      ctx.globalAlpha = cl.a*alphaMul;
-      ctx.beginPath(); ctx.ellipse(0, baseY-2, cl.puffs.length*9, 8, 0, 0, 6.283); ctx.fill();
-      ctx.restore();
+  function drawCloudShape(o, v, w, h, m){
+    function X(f){ return (m ? 1-f : f)*w; }
+    var lobes = CLOUD_SHAPES[v];
+    var baseY = h*0.80;
+    o.beginPath();
+    o.moveTo(X(0.05), baseY);
+    o.lineTo(X(0.95), baseY);
+    o.bezierCurveTo(X(1.04), baseY-h*0.07, X(1.01), h*0.52, X(0.88), h*0.50);
+    for (var i=0;i<lobes.length;i++){
+      var L2 = lobes[i];
+      o.bezierCurveTo(X(L2.x+L2.w*0.45), h*L2.peak, X(L2.x-L2.w*0.45), h*L2.peak, X(L2.x-L2.w*0.55), h*L2.val);
     }
-    ctx.globalAlpha = 1;
+    o.bezierCurveTo(X(0.06), h*0.50, X(0.01), baseY-h*0.07, X(0.05), baseY);
+    o.closePath();
   }
   function cloudShadows(now){
     for (var i=0;i<clouds.length;i++){
@@ -497,22 +524,6 @@ var Scene = (function(){
   function makeSnow(){
     snowP = [];
     for (var i=0;i<75;i++) snowP.push({ x:Math.random(), y:Math.random(), v:26+Math.random()*44, r:1.4+Math.random()*2.4, ph:Math.random()*6.28 });
-  }
-
-  function ensureGrads(tint){
-    var key = Math.round(tint[0])+","+Math.round(tint[1])+","+Math.round(tint[2]);
-    if (gradsKey === key) return;
-    gradsKey = key;
-    for (var i=0;i<clouds.length;i++){
-      var cl = clouds[i];
-      for (var p=0;p<cl.puffs.length;p++){
-        var pf = cl.puffs[p];
-        var g2 = ctx.createRadialGradient(pf.dx, pf.dy, 0, pf.dx, pf.dy, pf.r*1.55);
-        g2.addColorStop(0, rgb(tint, .85));
-        g2.addColorStop(1, rgb(tint, 0));
-        pf.grad = g2;
-      }
-    }
   }
 
   function sunPos(now){
@@ -590,26 +601,20 @@ var Scene = (function(){
     var lit = new Path2D(litPath(mp.p, r*0.92, mp.x, mp.y, mp.p<0.5, mp.p>0.25 && mp.p<0.75));
     ctx.fillStyle = "#cfd8e6"; ctx.fill(lit);
   }
-  function drawClouds(dt, sunX, elev, g, tint, alphaMul, maxN){
+  function drawClouds(sunX, elev, g, alphaMul, maxN){
+    buildCloudSprites(elev, g);
     var n = Math.min(maxN, clouds.length);
     for (var i=0;i<n;i++){
       var cl = clouds[i];
-      cl.x += cl.spd*dt;
+      cl.x += cl.spd*(1/30);
       if (cl.x > 1.25) cl.x -= 1.5;
       if (cl.x < -0.25) cl.x += 1.5;
-      cloudGrads(cl, tint, elev, g, sunX);
-      ctx.save();
-      ctx.translate(cl.x*Wc, cl.y*Hc);
-      ctx.scale(cl.s, cl.s);
+      var d2 = (sunX !== null && sunX < cl.x*Wc) ? 1 : 0;
+      var img = sprites[cl.v][d2];
+      var dw = SW*cl.s, dh = SH*cl.s;
       ctx.globalAlpha = cl.a*alphaMul;
-      for (var p=0;p<cl.puffs.length;p++){
-        var pf = cl.puffs[p];
-        ctx.beginPath(); ctx.arc(pf.dx, pf.dy, pf.r*1.5, 0, 6.283);
-        ctx.fillStyle = pf.grad; ctx.fill();
-      }
-      ctx.restore();
+      ctx.drawImage(img, cl.x*Wc - dw*0.5, cl.y*Hc - dh*0.42, dw, dh);
     }
-    drawCloudBases(g, alphaMul);
     ctx.globalAlpha = 1;
   }
   function drawRain(dt, wind){
@@ -849,8 +854,7 @@ var Scene = (function(){
     drawMoon(mp);
     var alphaMul = (g==="rain"||g==="storm") ? 0.9 : (g==="cloudy") ? 0.85 : (g==="snow") ? 0.7 : (g==="fog") ? 0.4 : 0.75;
     var maxN = (g==="clear") ? 5 : (g==="fog") ? 2 : 11;
-    var tint = (g==="rain"||g==="storm") ? [52,62,78] : (g==="snow") ? [225,232,240] : mix([252,253,255], pal.mid, 0.18);
-    drawClouds(1/30, sp?sp.x:null, elev, g, tint, alphaMul, maxN);
+    drawClouds(sp?sp.x:null, elev, g, alphaMul, maxN);
     drawHaze(pal);
     var wind = c ? c.wind_speed_10m : 4;
     if (g==="rain"||g==="drizzle"||g==="storm") drawRain(1/30, wind);
