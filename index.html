@@ -34,14 +34,15 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #condWind { font-size:3.8vh; font-weight:300; color:rgba(255,255,255,.85); margin-top:.5vh; }
 
 /* bottom strip: tides | moon | sun */
-#strip { flex:none; height:33vh; background:rgba(8,18,32,.45); border:1px solid rgba(255,255,255,.15);
-  border-radius:16px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+#strip { flex:none; height:33vh; background:linear-gradient(180deg, rgba(8,18,32,.34) 0%, rgba(8,18,32,.16) 100%); border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
   display:flex; align-items:center; color:#fff; overflow:hidden; }
 .pane { flex:1; display:flex; align-items:center; justify-content:center; padding:0 1vw; }
 #tidePane { flex-direction:column; align-items:center; justify-content:center; gap:1vh; }
 #tideLbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; text-align:center; }
 #tideWave { width:100%; height:12vh; display:block; }
-#tideCap { font-size:2.7vh; font-weight:300; white-space:nowrap; overflow:hidden; text-align:center; }
+#tideCap { font-size:2.7vh; font-weight:300; white-space:nowrap; overflow:hidden; text-align:center; text-shadow:0 1px 8px rgba(0,0,10,.7); }
+#tideLbl, #moonName, #moonRise, #moonLit, .plbl, #sunPane .srow, #sunPane .srow span.k { text-shadow:0 1px 8px rgba(0,0,10,.6); }
 #tideCap .next { color:#8fd2ff; }
 #tideCap .dim { color:rgba(255,255,255,.6); }
 .stripDiv { width:1px; align-self:stretch; background:rgba(255,255,255,.15); margin:1.4vh 0; }
@@ -288,7 +289,7 @@ var Scene = (function(){
   var clouds = [], rainP = [], snowP = [], stars = [], fogB = [];
   var gradsKey = null;
   var flash = 0, flashNext = 8, bolt = null;
-  var HORIZON = 0.66;
+  var HORIZON = 0.60;
 
   function mix(a,b,f){ return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f]; }
   function rgb(c,a){ return "rgba("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+","+(a===undefined?1:a)+")"; }
