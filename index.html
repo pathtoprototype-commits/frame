@@ -31,7 +31,13 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #condIcon { width:26vh; height:18vh; }
 #condFeels { font-size:3.4vh; font-weight:300; color:rgba(255,255,255,.75); margin-top:.4vh; }
 #condTxt { font-size:5.5vh; letter-spacing:.2em; font-weight:300; margin-top:.5vh; }
-#condWind { font-size:3.8vh; font-weight:300; color:rgba(255,255,255,.85); margin-top:.5vh; }
+#windPane { flex-direction:column; justify-content:center; gap:.8vh; text-align:center; }
+#windPane .plbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
+#windSvg { width:100%; height:9vh; display:block; }
+#windSvg .wl { fill:none; stroke:rgba(255,255,255,.6); stroke-width:3.2; stroke-linecap:round; stroke-dasharray:16 24; animation:windflow linear infinite; }
+@keyframes windflow { from { stroke-dashoffset:40; } to { stroke-dashoffset:0; } }
+#windSvg.flip { transform:scaleX(-1); }
+#windText { font-size:2.9vh; font-weight:300; white-space:nowrap; text-shadow:0 1px 8px rgba(0,0,10,.6); }
 
 /* bottom strip: tides | moon | sun */
 #strip { flex:none; height:33vh; background:linear-gradient(180deg, rgba(8,18,32,.34) 0%, rgba(8,18,32,.16) 100%); border:1px solid rgba(255,255,255,.12);
@@ -42,7 +48,7 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #tideLbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; text-align:center; }
 #tideWave { width:100%; height:12vh; display:block; }
 #tideCap { font-size:2.7vh; font-weight:300; white-space:nowrap; overflow:hidden; text-align:center; text-shadow:0 1px 8px rgba(0,0,10,.7); }
-#tideLbl, #moonName, #moonRise, #moonLit, .plbl, #sunPane .srow, #sunPane .srow span.k { text-shadow:0 1px 8px rgba(0,0,10,.6); }
+#tideLbl, #moonName, #moonRise, #moonLit, .plbl, .srow, #windText { text-shadow:0 1px 8px rgba(0,0,10,.6); }
 #tideCap .next { color:#8fd2ff; }
 #tideCap .dim { color:rgba(255,255,255,.6); }
 .stripDiv { width:1px; align-self:stretch; background:rgba(255,255,255,.15); margin:1.4vh 0; }
@@ -53,10 +59,13 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #moonRise { font-size:2.5vh; color:rgba(255,255,255,.7); margin-top:.3vh; white-space:nowrap; }
 #moonLit { font-size:2.3vh; color:rgba(255,255,255,.55); margin-top:.2vh; white-space:nowrap; }
 #moonPane .plbl { font-size:2vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
-#sunPane { flex-direction:column; justify-content:center; gap:2.2vh; text-align:center; }
-#sunPane .srow { display:flex; align-items:center; justify-content:center; gap:1.2vw; font-size:4.2vh; font-weight:300; }
-#sunPane .srow svg { width:6vh; height:4.2vh; }
-#sunPane .srow span.k { font-size:2.8vh; color:#8fd2ff; letter-spacing:.14em; width:10vw; text-align:left; }
+.srow { display:flex; align-items:center; justify-content:center; gap:1.2vw; font-size:4.2vh; font-weight:300; }
+.srow svg { width:6vh; height:4.2vh; }
+.srow span.k { font-size:2.8vh; color:#8fd2ff; letter-spacing:.14em; width:10vw; text-align:left; }
+.sunrows { display:flex; flex-direction:column; gap:.5vh; align-items:center; margin-top:.6vh; }
+.srow.mini { font-size:2.9vh; gap:.8vw; }
+.srow.mini svg { width:4.4vh; height:3.2vh; }
+.srow.mini span.k { font-size:2.3vh; width:7.5vw; }
 
 #music { position:absolute; top:1vh; right:1vw; width:7vw; height:7vw; display:none; align-items:center; justify-content:center;
   font-size:3.6vh; color:rgba(255,255,255,.5); cursor:pointer; z-index:50; }
@@ -79,7 +88,7 @@ body.night #time small { color:#7a1616; text-shadow:none; }
 body.night #date { color:#5c1010; }
 body.night #condTemp { color:#962020; text-shadow:0 0 10px rgba(150,25,25,.3); }
 body.night #condTxt { color:#6b1414; }
-body.night #condWind { color:#4a0d0d; }
+body.night #windText { color:#4a0d0d; }
 body.night .lbl, body.night .plbl, body.night #tideLbl { color:#6b1414; }
 body.night #tideCap { color:#7a1616; }
 body.night #tideCap .next { color:#a52424; }
@@ -91,7 +100,7 @@ body.night #tideWave circle { fill:#c04040 !important; }
 body.night #moonIcon { filter:grayscale(1) brightness(.4) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.9; }
 body.night #condIcon { filter:grayscale(1) brightness(.45) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.85; }
 #condIcon svg { width:100%; height:100%; display:block; }
-body.night #sunRow svg *, body.night #sunPane svg * { stroke:#5c1010 !important; fill:none !important; }
+body.night .srow svg *, body.night #windSvg .wl { stroke:#6b1414 !important; fill:none !important; }
 body.night .srow span.k, body.night .srow { color:#6b1414; }
 body.night #sunriseT, body.night #sunsetT { color:#962020; }
 body.night #music { color:#4a0d0d; }
@@ -112,8 +121,11 @@ body.night #music { color:#4a0d0d; }
       <div id="condBox">
         <div id="condTempRow"><span id="condTemp">--°</span></div>
         <div id="condTxt"></div>
-        <div id="condWind"></div>
         <div id="condFeels"></div>
+        <div class="sunrows">
+          <div class="srow mini"><svg viewBox="0 0 100 70"><g stroke="#ffb340" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 48 h60"/><path d="M35 38 a15 15 0 0 1 30 0"/><line x1="50" y1="14" x2="50" y2="22"/><line x1="26" y1="24" x2="32" y2="30"/><line x1="74" y1="24" x2="68" y2="30"/></g></svg><span class="k">Sunrise</span><span id="sunriseT"></span></div>
+          <div class="srow mini"><svg viewBox="0 0 100 70"><g stroke="#ff8a3d" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 44 h60"/><path d="M35 34 a15 15 0 0 1 30 0" opacity=".9"/><line x1="24" y1="58" x2="30" y2="52"/><line x1="76" y1="58" x2="70" y2="52"/></g></svg><span class="k">Sunset</span><span id="sunsetT"></span></div>
+        </div>
       </div>
     </div>
 
@@ -134,9 +146,16 @@ body.night #music { color:#4a0d0d; }
         </div>
       </div>
       <div class="stripDiv"></div>
-      <div class="pane" id="sunPane">
-        <div class="srow"><svg viewBox="0 0 100 70"><g stroke="#ffb340" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 48 h60"/><path d="M35 38 a15 15 0 0 1 30 0"/><line x1="50" y1="14" x2="50" y2="22"/><line x1="26" y1="24" x2="32" y2="30"/><line x1="74" y1="24" x2="68" y2="30"/></g></svg><span class="k">Sunrise</span><span id="sunriseT"></span></div>
-        <div class="srow"><svg viewBox="0 0 100 70"><g stroke="#ff8a3d" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 44 h60"/><path d="M35 34 a15 15 0 0 1 30 0" opacity=".9"/><line x1="24" y1="58" x2="30" y2="52"/><line x1="76" y1="58" x2="70" y2="52"/></g></svg><span class="k">Sunset</span><span id="sunsetT"></span></div>
+      <div class="pane" id="windPane">
+        <div style="width:100%">
+          <div class="plbl">Wind</div>
+          <svg id="windSvg" viewBox="0 0 200 64" preserveAspectRatio="none">
+            <path class="wl" d="M10 14 Q 42 7 74 14 T 138 13 T 190 12"/>
+            <path class="wl" d="M24 32 Q 56 25 88 32 T 150 31 T 196 30"/>
+            <path class="wl" d="M10 50 Q 42 43 74 50 T 138 49 T 186 48"/>
+          </svg>
+          <div id="windText"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -265,7 +284,15 @@ function renderWx(){
   var c = W.current, isDay = c.is_day===1;
   $("condTemp").textContent = Math.round(c.temperature_2m)+"°";
   $("condTxt").textContent = wxName(c.weather_code);
-  $("condWind").textContent = compass(c.wind_direction_10m)+" "+Math.round(c.wind_speed_10m)+" mph · Gusts "+Math.round(c.wind_gusts_10m);
+  var wEl = $("windSvg");
+  if (wEl){
+    var east = -Math.sin(c.wind_direction_10m*Math.PI/180);
+    wEl.style.transform = east < 0 ? "scaleX(-1)" : "none";
+    var dur = Math.max(0.7, 2.1 - c.wind_speed_10m*0.10).toFixed(2)+"s";
+    var wls = wEl.querySelectorAll(".wl");
+    for (var wi=0;wi<wls.length;wi++) wls[wi].style.animationDuration = dur;
+  }
+  $("windText").textContent = compass(c.wind_direction_10m)+" "+Math.round(c.wind_speed_10m)+" mph · Gusts "+Math.round(c.wind_gusts_10m);
   $("condFeels").textContent = "Feels like "+Math.round(c.apparent_temperature)+"°";
   $("sunriseT").textContent = to12(W.daily.sunrise[0]);
   $("sunsetT").textContent = to12(W.daily.sunset[0]);
