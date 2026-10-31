@@ -809,6 +809,7 @@ var Scene = (function(){
     ctx.fillStyle = rgb(redD, 1);
     ctx.fillRect(lx-0.7, deckY-lh-canH-4.5, 1.4, 3.5);
     ctx.beginPath(); ctx.arc(lx, deckY-lh-canH-5.5, 1.1, 0, 6.283); ctx.fill();
+    var lampX = lx;
     /* beam: sweeps left to right over 3s, cycle repeats every 7s. 50% intensity */
     var cyc = 7, sweep = 3;
     var t10 = t % cyc;
