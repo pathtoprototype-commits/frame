@@ -142,7 +142,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v103</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v104</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
@@ -209,6 +209,24 @@ window.onerror = function(msg, src, line, col){
   }
   b.textContent = "ERR: " + msg + " @" + (src||"").split("/").pop() + ":" + line;
 };
+</script>
+<script>
+(function(){
+  if (!/[?&]debug=1/.test(location.search)) return;
+  var HUB = "http://10.0.0.97:8124/log";
+  function send(o){
+    try { var lbl = document.getElementById("tideLbl"); o.v = (lbl.textContent.match(/v(\d+)/)||[])[1] || "?"; } catch(e){}
+    o.t = new Date().toISOString().substr(11,8);
+    try { var x = new XMLHttpRequest(); x.open("POST", HUB, true); x.setRequestHeader("Content-Type","text/plain"); x.send(JSON.stringify(o)); } catch(e){}
+  }
+  window.addEventListener("error", function(e){ send({k:"err", msg: e.message, src:(e.filename||"").split("/").pop(), line:e.lineno}); });
+  window.addEventListener("unhandledrejection", function(e){ send({k:"rej", msg: (e.reason && (e.reason.message||e.reason)) || "promise rejection"}); });
+  var frames = 0;
+  var oraf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = function(cb){ frames++; return oraf(cb); };
+  setInterval(function(){ send({k:"hb", fps: frames, night: document.body.classList.contains("night"), wx: !!window.W, tides: !!window.T, err: !!(document.getElementById("errbox"))}); frames = 0; }, 15000);
+  send({k:"boot", ua: navigator.userAgent.substr(0,80)});
+})();
 </script>
 <script>
 "use strict";
