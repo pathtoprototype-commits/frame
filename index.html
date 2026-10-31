@@ -200,10 +200,14 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 <script src="photos.js?v=4"></script>
 <script>
 window.onerror = function(msg, src, line, col){
-  var d = document.createElement("div");
-  d.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#000;color:#ffdddd;font:12px monospace;padding:6px;border-bottom:1px solid #600";
-  d.textContent = "ERR: " + msg + " @" + (src||"").split("/").pop() + ":" + line;
-  document.body.appendChild(d);
+  var b = document.getElementById("errbox");
+  if (!b){
+    b = document.createElement("div");
+    b.id = "errbox";
+    b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#000;color:#ffdddd;font:12px monospace;padding:6px;border-bottom:1px solid #600";
+    document.body.appendChild(b);
+  }
+  b.textContent = "ERR: " + msg + " @" + (src||"").split("/").pop() + ":" + line;
 };
 </script>
 <script>
@@ -248,6 +252,7 @@ function fetchWx(){
     +"&daily=sunrise,sunset,moon_phase,moonrise,moonset"
     +"&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=2";
   fetch(u).then(function(r){ return r.json(); }).then(function(d){
+    if (!d || !d.current || !d.daily || d.daily.moon_phase == null || d.daily.sunrise == null) return;
     W = d; renderWx(); Scene.update(W); tick();
   }).catch(function(){});
 }
@@ -571,7 +576,8 @@ var Scene = (function(){
     var mSet  = weather.daily.moonset[0] ? new Date(weather.daily.moonset[0]) : null;
     var up = mRise && now >= mRise && (!mSet || now < mSet);
     if (!up) return null;
-    return { x:0.48*Wc, y:0.15*Hc, p:weather.daily.moon_phase[0] };
+    var pv = weather.daily.moon_phase[0]; if (pv == null) pv = 0.5;
+    return { x:0.48*Wc, y:0.15*Hc, p:pv };
   }
 
   function drawSky(pal){
@@ -910,6 +916,7 @@ var Scene = (function(){
   }
   function render(){
     if (!ctx) return;
+    try {
     var now = new Date();
     var pal = skyPal(now);
     var c = weather ? weather.current : null;
@@ -950,6 +957,7 @@ var Scene = (function(){
     drawLighthouse(pal, elev, sp?sp.x:null);
     drawGrade(elev);
     stripTint(now, pal);
+    } catch(e) { /* skip malformed frame; next frame retries */ }
   }
 
   function frame(ts){
@@ -1123,8 +1131,9 @@ setInterval(renderClock,1000);
 setInterval(function(){ if (T) renderTides(); }, 120000);
 
 function renderMoonGraphic(){
-  if (!W || !W.daily) return;
-  $("moonIcon").innerHTML = moonSVG(W.daily.moon_phase[0], null, document.body.classList.contains("night"));
+  if (!W || !W.daily || W.daily.moon_phase == null) return;
+  var mpv = W.daily.moon_phase[0]; if (mpv == null) mpv = 0.5;
+  $("moonIcon").innerHTML = moonSVG(mpv, null, document.body.classList.contains("night"));
 }
 var lastMoonNight = null;
 function tick(){
