@@ -89,42 +89,30 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #panel button { background:#2a6fb5; border:0; color:#fff; border-radius:6px; padding:1.2vh 2.5vw; font-size:2.4vh; margin-top:1.5vh; }
 #panel .close { position:absolute; top:1.5vh; right:2.5vw; font-size:3.4vh; color:#999; cursor:pointer; }
 
-/* ---------- night: single-hue red ramp ----------
-   L1 #b03030 hero numbers · L2 #8a2020 data values
-   L3 #5a1414 labels · L4 #3a0d0d tertiary · glow rgba(176,48,48,α) */
+/* ---------- night: one red, one brightness (#a02828) ---------- */
 body.night #scene, body.night #scrim, body.night #vignette { display:none; }
 body.night { background:#000; }
-body.night .card { background:#000; border-color:rgba(176,48,48,.26); backdrop-filter:none; -webkit-backdrop-filter:none; }
-body.night #time { color:#b03030; text-shadow:0 0 16px rgba(176,48,48,.38); }
-body.night #time small { color:#8a2020; text-shadow:none; }
-body.night #date { color:#5a1414; }
-body.night #condTemp { color:#b03030; text-shadow:0 0 12px rgba(176,48,48,.32); }
-body.night #condTxt { color:#8a2020; }
-body.night #windText { color:#8a2020; }
-body.night .lbl, body.night .plbl, body.night #tideLbl { color:#5a1414; }
-body.night #tideCap { color:#5a1414; }
-body.night #tideCap .next { color:#8a2020; }
-body.night #tideCap .dim { color:#3a0d0d; }
-body.night #tideWave path { stroke:#8a2020 !important; fill:none !important; }
-body.night #tideWave path:first-of-type { fill:rgba(138,32,32,.13) !important; }
-body.night #tideWave line { stroke:rgba(176,48,48,.35) !important; }
-body.night #tideWave text { fill:#a02828 !important; }
-body.night #tideWave circle { fill:#b03030 !important; }
-body.night #nightBtn { color:#8a2020; border-color:rgba(176,48,48,.45); background:rgba(176,48,48,.10); }
-body.night #nightBtn.man { border-color:rgba(176,48,48,.7); background:rgba(176,48,48,.16); }
-body.night #moonIcon { filter:grayscale(1) brightness(.75) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.95; }
-body.night #condIcon { filter:grayscale(1) brightness(.45) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.85; }
-#condIcon svg { width:100%; height:100%; display:block; }
-body.night .srow svg *, body.night #windSvg .wl { stroke:rgba(176,48,48,.8) !important; fill:none !important; }
-body.night .srow span.k { color:#5a1414; }
-body.night .srow { color:#8a2020; }
-body.night #sunriseT, body.night #sunsetT { color:#8a2020; }
-body.night #moonName { color:#8a2020; }
-body.night #moonRise { color:#5a1414; }
-body.night #moonLit { color:#3a0d0d; }
-body.night #condFeels { color:#5a1414; }
-body.night .stripDiv { background:rgba(176,48,48,.22); }
-body.night #music { color:#3a0d0d; }
+body.night .card, body.night #strip { background:#000; border-color:rgba(160,40,40,.35); backdrop-filter:none; -webkit-backdrop-filter:none; }
+body.night #time, body.night #condTemp,
+body.night #time small, body.night #date, body.night #condTxt, body.night #condFeels,
+body.night #windText, body.night .lbl, body.night .plbl, body.night #tideLbl,
+body.night #tideCap, body.night #tideCap .next, body.night #tideCap .dim,
+body.night .srow, body.night .srow span.k, body.night #sunriseT, body.night #sunsetT,
+body.night #moonName, body.night #moonRise, body.night #moonLit,
+body.night #nightBtn, body.night #music,
+body.night #tideWave text, body.night #tideWave circle,
+body.night #moonPane .plbl, body.night #windPane .plbl { color:#a02828 !important; text-shadow:0 0 10px rgba(160,40,40,.28); }
+body.night #tideWave path { stroke:#a02828 !important; fill:none !important; }
+body.night #tideWave path:first-of-type { fill:rgba(160,40,40,.12) !important; }
+body.night #tideWave line { stroke:rgba(160,40,40,.45) !important; }
+body.night #tideWave circle { fill:#a02828 !important; }
+body.night #windSvg .wl { stroke:#a02828 !important; fill:none !important; }
+body.night .srow svg * { stroke:#a02828 !important; fill:none !important; }
+body.night .stripDiv { background:rgba(160,40,40,.3); }
+body.night #nightBtn { border-color:rgba(160,40,40,.5); background:rgba(160,40,40,.10); }
+body.night #nightBtn.man { border-color:rgba(160,40,40,.8); background:rgba(160,40,40,.18); }
+body.night #moonIcon { filter:none; }
+body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-50deg) saturate(5); }
 #nightWrap { display:none !important; }
 </style>
 </head>
@@ -271,15 +259,20 @@ function litPath(p,R,cx,cy,waxing,gib){
   d += " A "+rx+" "+R+" 0 0 "+(gib ? (waxing?1:0) : (waxing?0:1))+" "+cx+" "+top;
   return d;
 }
-function moonSVG(p, uid){
+function moonSVG(p, uid, nm){
   var R=44, cx=50, cy=50;
   var waxing = p<.5, gib = p>.25 && p<.75;
   var id = uid || ("m"+(MOON_ID++));
+  var gLite = nm ? "#a02828" : "#eef2f7";
+  var gMid  = nm ? "#7a1818" : "#c3ccd9";
+  var gDark = nm ? "#4a1010" : "#96a2b3";
+  var cBase = nm ? "#0a0404" : "#141b26";
+  var cStrk = nm ? "rgba(160,40,40,.4)" : "rgba(255,255,255,.22)";
   var out = '<defs>'
-    + '<radialGradient id="g'+id+'" cx="35%" cy="32%" r="80%"><stop offset="0" stop-color="#eef2f7"/><stop offset=".65" stop-color="#c3ccd9"/><stop offset="1" stop-color="#96a2b3"/></radialGradient>'
+    + '<radialGradient id="g'+id+'" cx="35%" cy="32%" r="80%"><stop offset="0" stop-color="'+gLite+'"/><stop offset=".65" stop-color="'+gMid+'"/><stop offset="1" stop-color="'+gDark+'"/></radialGradient>'
     + '<clipPath id="c'+id+'"><path d="'+litPath(p,R,cx,cy,waxing,gib)+'"/></clipPath>'
     + '</defs>';
-  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="#141b26" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>';
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+cBase+'" stroke="'+cStrk+'" stroke-width="1.5"/>';
   if (p>=.97) {
     out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="url(#g'+id+')"/>';
   } else if (p<=.03) {
@@ -287,12 +280,12 @@ function moonSVG(p, uid){
   } else {
     out += '<g clip-path="url(#c'+id+')">'
       + '<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="url(#g'+id+')"/>'
-      + '<circle cx="62" cy="38" r="9" fill="rgba(105,115,132,.38)"/>'
-      + '<circle cx="43" cy="60" r="7" fill="rgba(105,115,132,.34)"/>'
-      + '<circle cx="66" cy="62" r="5.5" fill="rgba(105,115,132,.3)"/>'
-      + '<circle cx="36" cy="36" r="4.5" fill="rgba(105,115,132,.3)"/>'
-      + '<circle cx="55" cy="47" r="3.5" fill="rgba(105,115,132,.28)"/>'
-      + '<circle cx="70" cy="47" r="3" fill="rgba(105,115,132,.26)"/>'
+      + '<circle cx="62" cy="38" r="9" fill="'+cCrat+'"/>'
+      + '<circle cx="43" cy="60" r="7" fill="'+cCrat+'"/>'
+      + '<circle cx="66" cy="62" r="5.5" fill="'+cCrat+'"/>'
+      + '<circle cx="36" cy="36" r="4.5" fill="'+cCrat+'"/>'
+      + '<circle cx="55" cy="47" r="3.5" fill="'+cCrat+'"/>'
+      + '<circle cx="70" cy="47" r="3" fill="'+cCrat+'"/>'
       + '</g>';
   }
   return out;
@@ -327,10 +320,10 @@ function renderWx(){
   $("condFeels").textContent = "Feels like "+Math.round(c.apparent_temperature)+"°";
   $("sunriseT").textContent = to12(W.daily.sunrise[0]);
   $("sunsetT").textContent = to12(W.daily.sunset[0]);
-  var p = W.daily.moon_phase[0];
-  $("moonIcon").innerHTML = moonSVG(p);
-  $("moonName").textContent = moonName(p);
-  var lit = Math.round((1-Math.cos(2*Math.PI*p))/2*100);
+  renderMoonGraphic();
+  $("moonName").textContent = moonName(W.daily.moon_phase[0]);
+  var mp2 = W.daily.moon_phase[0];
+  var lit = Math.round((1-Math.cos(2*Math.PI*mp2))/2*100);
   $("moonRise").textContent = W.daily.moonrise[0] ? "Rise " + to12(W.daily.moonrise[0]) : "";
   $("moonLit").textContent = lit + "% lit";
 }
@@ -1061,11 +1054,17 @@ function renderClock(){
 setInterval(renderClock,1000);
 setInterval(function(){ if (T) renderTides(); }, 120000);
 
+function renderMoonGraphic(){
+  if (!W || !W.daily) return;
+  $("moonIcon").innerHTML = moonSVG(W.daily.moon_phase[0], null, document.body.classList.contains("night"));
+}
+var lastMoonNight = null;
 function tick(){
   var d=new Date();
   var night = isNight(d);
   Scene.setNight(night);
   document.body.classList.toggle("night", night);
+  if (night !== lastMoonNight){ lastMoonNight = night; renderMoonGraphic(); }
   var nb = $("nightBtn");
   if (nb){
     nb.textContent = night ? "DAY" : "NIGHT";
