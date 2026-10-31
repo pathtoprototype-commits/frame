@@ -268,6 +268,7 @@ function moonSVG(p, uid, nm){
   var gDark = nm ? "#4a1010" : "#96a2b3";
   var cBase = nm ? "#0a0404" : "#141b26";
   var cStrk = nm ? "rgba(160,40,40,.4)" : "rgba(255,255,255,.22)";
+  var cCrat = nm ? "rgba(60,18,18,.55)" : "rgba(105,115,132,.38)";
   var out = '<defs>'
     + '<radialGradient id="g'+id+'" cx="35%" cy="32%" r="80%"><stop offset="0" stop-color="'+gLite+'"/><stop offset=".65" stop-color="'+gMid+'"/><stop offset="1" stop-color="'+gDark+'"/></radialGradient>'
     + '<clipPath id="c'+id+'"><path d="'+litPath(p,R,cx,cy,waxing,gib)+'"/></clipPath>'
