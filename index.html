@@ -732,14 +732,48 @@ var Scene = (function(){
       }
     }
   }
-  function drawLighthouse(pal){
+  function drawLighthouse(pal, elev, sunX){
     var lx = Wc*0.86, horY = Hc*HORIZON;
-    var hgt = Hc*0.085;
-    ctx.fillStyle = "rgba(8,15,26,.85)";
+    var hgt = Hc*0.095;
+    var warmW = Math.max(0, 1-elev*1.15);
+    var red = mix([181,72,48],[126,52,38], warmW*0.55);
+    var redD = mix(red,[92,38,28],0.4);
+    var white = mix([246,242,234],[255,213,158], warmW*0.85);
+    var whiteD = mix(white,[186,172,148],0.4);
+    var dark = mix([24,28,36],[44,38,36], warmW*0.3);
+    var sd = (sunX===null || sunX===undefined) ? 1 : (sunX > lx ? 1 : -1);
+    var hwB = 9.5, hwW0 = 7.2, hwR1 = 5.2, hwL = 4.2;
+    var yRed = horY - hgt*0.55, yRedTop = horY - hgt*0.88;
+    function sideGrad(y0, y1, hw, cLit, cDark){
+      var x0 = sd===1 ? lx-hw : lx+hw;
+      var x1 = sd===1 ? lx+hw : lx-hw;
+      var g2 = ctx.createLinearGradient(x0, y0, x1, y1);
+      g2.addColorStop(0, rgb(cDark));
+      g2.addColorStop(0.55, rgb(mix(cDark,cLit,0.55)));
+      g2.addColorStop(1, rgb(cLit));
+      return g2;
+    }
+    /* base platform */
+    ctx.fillStyle = rgb(mix(dark,[12,18,28],0.35), .92);
+    ctx.fillRect(lx-hwB*1.8, horY-3, hwB*3.6, 6);
+    /* white lower section */
+    ctx.fillStyle = sideGrad(horY, yRed, hwW0, white, whiteD);
     ctx.beginPath();
-    ctx.moveTo(lx-9, horY); ctx.lineTo(lx-4.5, horY-hgt); ctx.lineTo(lx+4.5, horY-hgt); ctx.lineTo(lx+9, horY); ctx.closePath(); ctx.fill();
-    ctx.fillRect(lx-6, horY-hgt-8, 12, 9);
-    var lampX = lx, lampY = horY-hgt-4;
+    ctx.moveTo(lx-hwB, horY); ctx.lineTo(lx-hwW0, yRed); ctx.lineTo(lx+hwW0, yRed); ctx.lineTo(lx+hwB, horY); ctx.closePath(); ctx.fill();
+    /* red upper section */
+    ctx.fillStyle = sideGrad(yRed, yRedTop, hwW0, red, redD);
+    ctx.beginPath();
+    ctx.moveTo(lx-hwW0, yRed); ctx.lineTo(lx-hwR1, yRedTop); ctx.lineTo(lx+hwR1, yRedTop); ctx.lineTo(lx+hwW0, yRed); ctx.closePath(); ctx.fill();
+    /* gallery platform */
+    ctx.fillStyle = rgb(dark, .95);
+    ctx.fillRect(lx-hwL-1.4, yRedTop-3, (hwL+1.4)*2, 3.2);
+    /* lantern room */
+    ctx.fillStyle = rgb(dark, .95);
+    ctx.fillRect(lx-hwL, yRedTop-3-hgt*0.11, hwL*2, hgt*0.11);
+    /* cap */
+    ctx.fillStyle = rgb(dark, 1);
+    ctx.beginPath(); ctx.moveTo(lx-hwL-1, yRedTop-3-hgt*0.11); ctx.lineTo(lx, yRedTop-3-hgt*0.11-5); ctx.lineTo(lx+hwL+1, yRedTop-3-hgt*0.11); ctx.closePath(); ctx.fill();
+    var lampX = lx, lampY = yRedTop - 3 - hgt*0.11 - 2;
     /* beam: sweeps left to right over 3s, then dark for 7s. 50% intensity */
     var cyc = 10, sweep = 3;
     var t10 = t % cyc;
@@ -881,7 +915,7 @@ var Scene = (function(){
     drawGulls(1/30);
     drawRays(sp, elev, g);
     drawPilings();
-    drawLighthouse(pal);
+    drawLighthouse(pal, elev, sp?sp.x:null);
     drawGrade(elev);
     stripTint(now, pal);
   }
