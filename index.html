@@ -767,11 +767,11 @@ var Scene = (function(){
     ctx.fillStyle = sideGrad(yRed, yRedTop, hwW0, red, redD);
     ctx.beginPath();
     ctx.moveTo(lx-hwW0, yRed); ctx.lineTo(lx-hwR1, yRedTop); ctx.lineTo(lx+hwR1, yRedTop); ctx.lineTo(lx+hwW0, yRed); ctx.closePath(); ctx.fill();
-    /* gallery deck + railing */
+    /* gallery deck + railing (red, matching the tower) */
     var deckY = yRedTop - 2.5;
-    ctx.fillStyle = rgb(dark, .96);
+    ctx.fillStyle = sideGrad(deckY, deckY+2.5, hwL+1.6, red, redD);
     ctx.fillRect(lx-hwL-1.6, deckY, (hwL+1.6)*2, 2.5);
-    ctx.strokeStyle = rgb(dark, .85); ctx.lineWidth = 0.8;
+    ctx.strokeStyle = rgb(redD, .9); ctx.lineWidth = 0.9;
     for (var rt=0;rt<5;rt++){
       var rx2 = lx-hwL + rt*(hwL*2)/4;
       ctx.beginPath(); ctx.moveTo(rx2, deckY); ctx.lineTo(rx2, deckY-3.4); ctx.stroke();
@@ -785,16 +785,20 @@ var Scene = (function(){
     lg2.addColorStop(0, "rgba(255,225,150,.8)");
     lg2.addColorStop(1, "rgba(255,225,150,.06)");
     ctx.fillStyle = lg2; ctx.fillRect(lx-hwL+0.8, deckY-lh, (hwL-0.8)*2, lh);
-    /* domed roof + finial */
-    ctx.fillStyle = rgb(dark, 1);
+    /* white canopy */
+    var canW = hwL+2.4, canH = 5.5;
+    ctx.fillStyle = sideGrad(deckY-lh, deckY-lh-canH, canW, white, whiteD);
     ctx.beginPath();
-    ctx.moveTo(lx-hwL, deckY-lh);
-    ctx.quadraticCurveTo(lx, deckY-lh-6.5, lx+hwL, deckY-lh);
+    ctx.moveTo(lx-canW, deckY-lh);
+    ctx.lineTo(lx, deckY-lh-canH-2.5);
+    ctx.lineTo(lx+canW, deckY-lh);
     ctx.closePath(); ctx.fill();
-    ctx.fillRect(lx-0.7, deckY-lh-8.5, 1.4, 4);
-    ctx.beginPath(); ctx.arc(lx, deckY-lh-9.5, 1.1, 0, 6.283); ctx.fill();
-    /* beam: sweeps left to right over 3s, then dark for 7s. 50% intensity */
-    var cyc = 10, sweep = 3;
+    /* finial */
+    ctx.fillStyle = rgb(redD, 1);
+    ctx.fillRect(lx-0.7, deckY-lh-canH-4.5, 1.4, 3.5);
+    ctx.beginPath(); ctx.arc(lx, deckY-lh-canH-5.5, 1.1, 0, 6.283); ctx.fill();
+    /* beam: sweeps left to right over 3s, cycle repeats every 7s. 50% intensity */
+    var cyc = 7, sweep = 3;
     var t10 = t % cyc;
     if (t10 < sweep){
       var f2 = t10 / sweep;
@@ -812,7 +816,7 @@ var Scene = (function(){
       ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(len,-26); ctx.lineTo(len,26); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
-    var k = 0.5 + 0.5*Math.abs(Math.sin(2*Math.PI*t/cyc));
+    var k = 0.5 + 0.5*Math.abs(Math.sin(2*Math.PI*t/7));
     var g2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, 26);
     g2.addColorStop(0, "rgba(255,225,150,"+(0.30*k).toFixed(3)+")");
     g2.addColorStop(1, "rgba(255,225,150,0)");
