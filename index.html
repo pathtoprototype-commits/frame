@@ -746,10 +746,6 @@ var Scene = (function(){
   function drawLighthouse(pal, elev, sunX){
     var lx = Wc*0.86, horY = Hc*HORIZON;
     var hgt = Hc*0.095;
-    ctx.fillStyle = "rgba(255,60,60,.95)";
-    ctx.fillRect(lx-20, horY-100, 40, 60);
-    ctx.fillStyle = "#fff"; ctx.font = "16px monospace";
-    ctx.fillText("LH-RUN", lx-20, horY-108);
     var warmW = Math.max(0, 1-elev*1.15);
     var red = mix([181,72,48],[126,52,38], warmW*0.55);
     var redD = mix(red,[92,38,28],0.4);
@@ -817,24 +813,24 @@ var Scene = (function(){
       var f2 = t10 / sweep;
       var a = Math.PI - f2*Math.PI;
       var ramp = Math.sin(f2*Math.PI);
-      var len = Wc*0.20;
+      var len = Wc*0.22;
       ctx.save();
       ctx.translate(lampX, lampY);
       ctx.rotate(-a);
       var bg2 = ctx.createLinearGradient(0,0,len,0);
-      bg2.addColorStop(0, "rgba(255,228,150,"+(0.20*ramp).toFixed(3)+")");
-      bg2.addColorStop(0.55, "rgba(255,228,150,"+(0.075*ramp).toFixed(3)+")");
-      bg2.addColorStop(1, "rgba(255,228,150,0)");
+      bg2.addColorStop(0, "rgba(255,228,150,"+(0.38*ramp).toFixed(3)+")");
+      bg2.addColorStop(0.4, "rgba(255,234,170,"+(0.5*ramp).toFixed(3)+")");
+      bg2.addColorStop(1, "rgba(255,234,170,0)");
       ctx.fillStyle = bg2;
-      ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(len,-26); ctx.lineTo(len,26); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,-4); ctx.lineTo(len,-30); ctx.lineTo(len,30); ctx.lineTo(0,4); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
     var k = 0.5 + 0.5*Math.abs(Math.sin(2*Math.PI*t/7));
-    var g2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, 26);
-    g2.addColorStop(0, "rgba(255,225,150,"+(0.30*k).toFixed(3)+")");
+    var g2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, 30);
+    g2.addColorStop(0, "rgba(255,225,150,"+(0.45*k).toFixed(3)+")");
     g2.addColorStop(1, "rgba(255,225,150,0)");
-    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(lampX, lampY, 26, 0, 6.283); ctx.fill();
-    ctx.fillStyle = "rgba(255,240,190,.85)";
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(lampX, lampY, 30, 0, 6.283); ctx.fill();
+    ctx.fillStyle = "rgba(255,240,190,.9)";
     ctx.beginPath(); ctx.arc(lampX, lampY, 3.2, 0, 6.283); ctx.fill();
   }
 
