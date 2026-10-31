@@ -746,6 +746,10 @@ var Scene = (function(){
   function drawLighthouse(pal, elev, sunX){
     var lx = Wc*0.86, horY = Hc*HORIZON;
     var hgt = Hc*0.095;
+    ctx.fillStyle = "rgba(255,60,60,.95)";
+    ctx.fillRect(lx-20, horY-100, 40, 60);
+    ctx.fillStyle = "#fff"; ctx.font = "16px monospace";
+    ctx.fillText("LH-RUN", lx-20, horY-108);
     var warmW = Math.max(0, 1-elev*1.15);
     var red = mix([181,72,48],[126,52,38], warmW*0.55);
     var redD = mix(red,[92,38,28],0.4);
