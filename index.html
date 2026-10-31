@@ -43,12 +43,12 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #condLine #condTxt { letter-spacing:.14em; }
 #condLine .csep { opacity:.45; margin:0 .9vw; }
 #windPane { flex-direction:column; justify-content:space-between; align-self:stretch; padding:1.6vh 1vw; gap:0; text-align:center; }
-#windPane .plbl { font-size:2.4vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
-#windSvg { width:100%; height:14vh; display:block; }
+#windPane .plbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
+#windSvg { width:100%; height:15vh; display:block; }
 #windSvg .wl { fill:none; stroke:rgba(255,255,255,.6); stroke-width:3.2; stroke-linecap:round; stroke-dasharray:16 24; animation:windflow linear infinite; }
 @keyframes windflow { from { stroke-dashoffset:40; } to { stroke-dashoffset:0; } }
 #windSvg.flip { transform:scaleX(-1); }
-#windText { font-size:3.4vh; font-weight:300; white-space:nowrap; text-shadow:0 1px 8px rgba(0,0,10,.6); }
+#windText { font-size:2.7vh; font-weight:300; white-space:nowrap; text-shadow:0 1px 8px rgba(0,0,10,.6); }
 
 /* bottom strip: tides | moon | sun */
 #strip { flex:none; height:33vh; background:linear-gradient(180deg, rgba(8,18,32,.34) 0%, rgba(8,18,32,.16) 100%); border:1px solid rgba(255,255,255,.12);
@@ -144,7 +144,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v108</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v109</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
@@ -164,15 +164,13 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
       </div>
       <div class="stripDiv"></div>
       <div class="pane" id="windPane">
-        <div style="width:100%">
-          <div class="plbl">Wind</div>
-          <svg id="windSvg" viewBox="0 0 200 64" preserveAspectRatio="none">
-            <path class="wl" d="M10 14 Q 42 7 74 14 T 138 13 T 190 12"/>
-            <path class="wl" d="M24 32 Q 56 25 88 32 T 150 31 T 196 30"/>
-            <path class="wl" d="M10 50 Q 42 43 74 50 T 138 49 T 186 48"/>
-          </svg>
-          <div id="windText"></div>
-        </div>
+        <div class="plbl">Wind</div>
+        <svg id="windSvg" viewBox="0 0 200 64" preserveAspectRatio="none">
+          <path class="wl" d="M10 14 Q 42 7 74 14 T 138 13 T 190 12"/>
+          <path class="wl" d="M24 32 Q 56 25 88 32 T 150 31 T 196 30"/>
+          <path class="wl" d="M10 50 Q 42 43 74 50 T 138 49 T 186 48"/>
+        </svg>
+        <div id="windText"></div>
       </div>
     </div>
   </div>
@@ -343,10 +341,11 @@ function renderWx(){
     var east = -Math.sin(c.wind_direction_10m*Math.PI/180);
     var south = Math.cos(c.wind_direction_10m*Math.PI/180);
     var flip = east < 0;
-    var tilt = Math.max(-18, Math.min(18, Math.atan2(south, Math.abs(east)+0.001)*57.3*(east<0?-1:1)));
+    var tilt = Math.max(-10, Math.min(10, Math.atan2(south, Math.abs(east)+0.001)*57.3*(east<0?-1:1)));
     var gu = Math.max(0, (c.wind_gusts_10m||0) - c.wind_speed_10m);
     var eff = c.wind_speed_10m + gu*0.5;
-    var set2 = eff < 7 ? { d:"22 30", sy:0.72 } : (eff < 14 ? { d:"16 20", sy:1 } : { d:"12 9", sy:1.16 });
+    /* dash pattern lengths all sum to 40 so the 40px dashoffset loop wraps seamlessly */
+    var set2 = eff < 7 ? { d:"12 28", sy:0.72 } : (eff < 14 ? { d:"16 24", sy:1 } : { d:"22 18", sy:1.16 });
     wEl.style.transform = (flip ? "scaleX(-1) " : "") + "rotate("+tilt.toFixed(1)+"deg)";
     var dur = Math.max(0.6, 2.1 - eff*0.10).toFixed(2)+"s";
     var wls = wEl.querySelectorAll(".wl");
