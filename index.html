@@ -144,7 +144,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v111</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v112</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
@@ -573,6 +573,15 @@ var Scene = (function(){
     for (var i=0;i<75;i++) snowP.push({ x:Math.random(), y:Math.random(), v:26+Math.random()*44, r:1.4+Math.random()*2.4, ph:Math.random()*6.28 });
   }
 
+  /* solar geometry: declination from day of year, noon altitude from saved latitude.
+     Peak arc height follows the seasons: ~top of screen at the summer solstice,
+     much lower at the winter solstice, proportional in between. */
+  function noonAlt(now){
+    var lat = parseFloat(S.lat); if (isNaN(lat)) lat = 39.7518;
+    var doy = Math.floor((now.getTime() - Date.UTC(now.getFullYear(),0,1))/86400000);
+    var decl = -23.44*Math.cos(2*Math.PI*(doy+10)/365.25);
+    return Math.max(8, Math.min(80, 90 - Math.abs(lat - decl)));
+  }
   function sunPos(now){
     if (!weather || !weather.daily) return null;
     var rise = new Date(weather.daily.sunrise[0]).getTime();
@@ -582,7 +591,8 @@ var Scene = (function(){
     if (g !== "clear") return null;
     if (n >= rise && n <= set){
       var p = (n - rise)/(set - rise);
-      return { x:(0.08+p*0.84)*Wc, y:Hc*(0.62 - Math.sin(p*Math.PI)*0.48), up:true, p:p };
+      var amp = (0.62 - 0.06) * (noonAlt(now)/80);  /* horizon -> top-of-screen span */
+      return { x:(0.08+p*0.84)*Wc, y:Hc*(0.62 - Math.sin(p*Math.PI)*amp), up:true, p:p };
     }
     var duskEnd = set + S.sunsetOffset*60000;
     if (n > set && n <= duskEnd){
