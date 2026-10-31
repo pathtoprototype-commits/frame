@@ -142,7 +142,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v105</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v106</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
@@ -826,12 +826,8 @@ var Scene = (function(){
     ctx.lineTo(lx, deckY-lh-canH-2.5);
     ctx.lineTo(lx+canW, deckY-lh);
     ctx.closePath(); ctx.fill();
-    /* finial */
-    ctx.fillStyle = rgb(redD, 1);
-    ctx.fillRect(lx-0.7, deckY-lh-canH-4.5, 1.4, 3.5);
-    ctx.beginPath(); ctx.arc(lx, deckY-lh-canH-5.5, 1.1, 0, 6.283); ctx.fill();
-    /* beam: sweeps left to right over 3s, cycle repeats every 7s. 50% intensity */
-    var cyc = 7, sweep = 3;
+    /* beam: sweeps over 3s, then waits 10s before sweeping again. 50% intensity */
+    var cyc = 13, sweep = 3;
     var t10 = t % cyc;
     if (t10 < sweep){
       var f2 = t10 / sweep;
