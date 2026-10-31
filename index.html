@@ -142,7 +142,7 @@ body.night #moonIcon { filter:none; }
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v113</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v114</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
@@ -1172,6 +1172,7 @@ $("nightBtn").addEventListener("click", function(){
 if (S.stream) $("music").style.display = "flex";
 Scene.init();
 renderClock(); tick(); fetchWx(); fetchTides();
+try { if (window.screen && screen.orientation && screen.orientation.lock) { var p = screen.orientation.lock("landscape"); if (p && p.catch) p.catch(function(){}); } } catch(e) {}
 setInterval(fetchWx, 20*60*1000); setInterval(fetchTides, 60*60*1000);
 (function(){ var d=new Date(), n=new Date(d); n.setHours(4,0,0,0); if (n<=d) n.setDate(n.getDate()+1); setTimeout(function(){ location.reload(); }, n-d); })();
 </script>
