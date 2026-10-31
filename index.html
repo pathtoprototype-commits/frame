@@ -55,9 +55,9 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
   border-radius:16px;
   display:flex; align-items:center; color:#fff; overflow:hidden; }
 .pane { flex:1; display:flex; align-items:center; justify-content:center; padding:0 1vw; }
-#tidePane { flex-direction:column; align-items:center; justify-content:center; gap:1vh; }
+#tidePane { flex-direction:column; align-items:center; justify-content:space-between; align-self:stretch; padding:1.6vh 1vw; gap:0; }
 #tideLbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; text-align:center; }
-#tideWave { width:100%; height:12vh; display:block; }
+#tideWave { width:100%; height:20vh; display:block; }
 #tideCap { font-size:2.7vh; font-weight:300; white-space:nowrap; overflow:hidden; text-align:center; text-shadow:0 1px 8px rgba(0,0,10,.7); }
 #tideLbl, #moonName, #moonRise, #moonLit, .plbl, .srow, #windText { text-shadow:0 1px 8px rgba(0,0,10,.6); }
 #tideCap .next { color:#8fd2ff; }
@@ -142,7 +142,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
 
     <div id="strip">
       <div class="pane" id="tidePane">
-        <div id="tideLbl">Tides — Barnegat Inlet · v106</div>
+        <div id="tideLbl">Tides — Barnegat Inlet · v107</div>
         <div id="tideWave"></div>
         <div id="tideCap"></div>
       </div>
