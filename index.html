@@ -39,8 +39,9 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #condTempRow { display:flex; align-items:center; justify-content:center; gap:2vw; }
 #condTemp { font-size:23vh; font-weight:300; line-height:1; text-shadow:0 3px 18px rgba(0,0,10,.3); }
 #condIcon { width:26vh; height:18vh; }
-#condFeels { font-size:3.4vh; font-weight:300; color:rgba(255,255,255,.75); margin-top:.4vh; }
-#condTxt { font-size:5.5vh; letter-spacing:.2em; font-weight:300; margin-top:.5vh; }
+#condLine { font-size:3.4vh; font-weight:300; color:rgba(255,255,255,.8); margin-top:.8vh; white-space:nowrap; }
+#condLine #condTxt { letter-spacing:.14em; }
+#condLine .csep { opacity:.45; margin:0 .9vw; }
 #windPane { flex-direction:column; justify-content:center; gap:.8vh; text-align:center; }
 #windPane .plbl { font-size:2.1vh; letter-spacing:.2em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
 #windSvg { width:100%; height:9vh; display:block; }
@@ -135,8 +136,7 @@ body.night #condIcon { filter:grayscale(1) brightness(.8) sepia(1) hue-rotate(-5
       </div>
       <div id="condBox">
         <div id="condTempRow"><span id="condTemp">--°</span></div>
-        <div id="condTxt"></div>
-        <div id="condFeels"></div>
+        <div id="condLine"><span id="condTxt"></span><span class="csep">·</span><span id="condFeels"></span></div>
       </div>
     </div>
 
