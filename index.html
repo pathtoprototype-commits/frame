@@ -1006,7 +1006,11 @@ function renderTides(){
 
 /* ============ schedule / night ============ */
 function parseHM(s){ var p=s.split(":"); return {h:+p[0], m:+p[1]}; }
+var PREVIEW = null;
+if (/preview=night/.test(location.search)) PREVIEW = true;
+else if (/preview=day/.test(location.search)) PREVIEW = false;
 function isNight(d){
+  if (PREVIEW !== null) return PREVIEW;
   if (S.mode==="off") return false;
   if (S.mode==="fixed"){ var a=parseHM(S.dayStart), b=parseHM(S.dayEnd), m=d.getHours()*60+d.getMinutes(); return !(m>=a.h*60+a.m && m<b.h*60+b.m); }
   if (W && W.daily){
