@@ -342,7 +342,7 @@ var Scene = (function(){
   var shoot = null, shootNext = 14;
   var gullNext = 9;
   var rippleT = 0;
-  var HORIZON = 0.60;
+  var HORIZON = 0.63;
 
   function mix(a,b,f){ return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f]; }
   function rgb(c,a){ return "rgba("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+","+(a===undefined?1:a)+")"; }
@@ -731,6 +731,9 @@ var Scene = (function(){
         ctx.beginPath(); ctx.arc(fx2, fy2, 1.1+((k+i)%3)*0.5, 0, 6.283); ctx.fill();
       }
     }
+    ctx.strokeStyle = rgb(mix(pal.hor,[255,255,255],0.6), 0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, horY); ctx.lineTo(Wc, horY); ctx.stroke();
   }
   function drawLighthouse(pal, elev, sunX){
     var lx = Wc*0.86, horY = Hc*HORIZON;
@@ -764,16 +767,32 @@ var Scene = (function(){
     ctx.fillStyle = sideGrad(yRed, yRedTop, hwW0, red, redD);
     ctx.beginPath();
     ctx.moveTo(lx-hwW0, yRed); ctx.lineTo(lx-hwR1, yRedTop); ctx.lineTo(lx+hwR1, yRedTop); ctx.lineTo(lx+hwW0, yRed); ctx.closePath(); ctx.fill();
-    /* gallery platform */
-    ctx.fillStyle = rgb(dark, .95);
-    ctx.fillRect(lx-hwL-1.4, yRedTop-3, (hwL+1.4)*2, 3.2);
-    /* lantern room */
-    ctx.fillStyle = rgb(dark, .95);
-    ctx.fillRect(lx-hwL, yRedTop-3-hgt*0.11, hwL*2, hgt*0.11);
-    /* cap */
+    /* gallery deck + railing */
+    var deckY = yRedTop - 2.5;
+    ctx.fillStyle = rgb(dark, .96);
+    ctx.fillRect(lx-hwL-1.6, deckY, (hwL+1.6)*2, 2.5);
+    ctx.strokeStyle = rgb(dark, .85); ctx.lineWidth = 0.8;
+    for (var rt=0;rt<5;rt++){
+      var rx2 = lx-hwL + rt*(hwL*2)/4;
+      ctx.beginPath(); ctx.moveTo(rx2, deckY); ctx.lineTo(rx2, deckY-3.4); ctx.stroke();
+    }
+    /* lantern room: dark glass, warm lamp glowing inside */
+    var lh = hgt*0.13;
+    var lampY = deckY - lh*0.5;
+    ctx.fillStyle = "rgba(26,22,30,.96)";
+    ctx.fillRect(lx-hwL+0.8, deckY-lh, (hwL-0.8)*2, lh);
+    var lg2 = ctx.createRadialGradient(lampX, lampY, 0, lampX, lampY, hwL);
+    lg2.addColorStop(0, "rgba(255,225,150,.8)");
+    lg2.addColorStop(1, "rgba(255,225,150,.06)");
+    ctx.fillStyle = lg2; ctx.fillRect(lx-hwL+0.8, deckY-lh, (hwL-0.8)*2, lh);
+    /* domed roof + finial */
     ctx.fillStyle = rgb(dark, 1);
-    ctx.beginPath(); ctx.moveTo(lx-hwL-1, yRedTop-3-hgt*0.11); ctx.lineTo(lx, yRedTop-3-hgt*0.11-5); ctx.lineTo(lx+hwL+1, yRedTop-3-hgt*0.11); ctx.closePath(); ctx.fill();
-    var lampX = lx, lampY = yRedTop - 3 - hgt*0.11 - 2;
+    ctx.beginPath();
+    ctx.moveTo(lx-hwL, deckY-lh);
+    ctx.quadraticCurveTo(lx, deckY-lh-6.5, lx+hwL, deckY-lh);
+    ctx.closePath(); ctx.fill();
+    ctx.fillRect(lx-0.7, deckY-lh-8.5, 1.4, 4);
+    ctx.beginPath(); ctx.arc(lx, deckY-lh-9.5, 1.1, 0, 6.283); ctx.fill();
     /* beam: sweeps left to right over 3s, then dark for 7s. 50% intensity */
     var cyc = 10, sweep = 3;
     var t10 = t % cyc;
