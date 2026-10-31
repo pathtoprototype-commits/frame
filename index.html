@@ -30,12 +30,12 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #nightBtn.man { border-color:rgba(255,255,255,.75); background:rgba(255,255,255,.16); }
 
 /* header block: time and temp centered as a pair — outer space symmetric */
-#hdr { flex:1; display:flex; align-items:flex-start; justify-content:center; gap:5vw; }
-#timeBlock { text-align:center; }
+#hdr { flex:1; display:flex; align-items:stretch; justify-content:center; gap:5vw; }
+#timeBlock { display:flex; flex-direction:column; justify-content:center; text-align:center; }
 #time { font-size:29vh; font-weight:300; line-height:.95; text-shadow:0 3px 22px rgba(0,0,10,.35); }
 #time small { font-size:7.5vh; font-weight:300; margin-left:1vw; color:rgba(255,255,255,.9); }
 #date { font-size:5vh; font-weight:300; letter-spacing:.3em; color:rgba(255,255,255,.95); text-transform:uppercase; margin-top:1vh; }
-#condBox { text-align:center; }
+#condBox { display:flex; flex-direction:column; justify-content:center; text-align:center; padding-bottom:6.6vh; }
 #condTempRow { display:flex; align-items:center; justify-content:center; gap:2vw; }
 #condTemp { font-size:23vh; font-weight:300; line-height:1; text-shadow:0 3px 18px rgba(0,0,10,.3); }
 #condIcon { width:26vh; height:18vh; }
