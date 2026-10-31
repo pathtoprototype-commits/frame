@@ -19,11 +19,15 @@ html,body { width:100%; height:100%; background:#000; overflow:hidden; font-fami
 #app { position:absolute; inset:0; display:flex; flex-direction:column; padding:2.5vh 3.5vw; color:#fff; }
 .lbl { letter-spacing:.26em; color:#8fd2ff; font-weight:500; text-transform:uppercase; }
 
-/* top edge: sunrise / sunset */
+/* top edge: sunrise / night-button / sunset */
 #topbar { flex:none; display:flex; justify-content:space-between; align-items:center; padding:0 .5vw 1vh; }
 #topbar .srow { font-size:3vh; }
 #topbar .srow svg { width:5vh; height:3.6vh; }
 #topbar .srow span.k { font-size:2.5vh; width:8vw; }
+#nightBtn { flex:none; font-family:"Jost",sans-serif; font-size:2.4vh; letter-spacing:.22em; text-transform:uppercase;
+  color:rgba(255,255,255,.85); background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.4);
+  border-radius:20px; padding:.7vh 2.4vw; cursor:pointer; }
+#nightBtn.man { border-color:rgba(255,255,255,.75); background:rgba(255,255,255,.16); }
 
 /* header block: time and temp fill the space */
 #hdr { flex:1; display:flex; align-items:center; }
@@ -105,6 +109,8 @@ body.night #tideWave path { stroke:#8a2020 !important; fill:none !important; }
 body.night #tideWave path:first-of-type { fill:rgba(138,32,32,.13) !important; }
 body.night #tideWave line { stroke:rgba(90,20,20,.4) !important; }
 body.night #tideWave circle { fill:#b03030 !important; }
+body.night #nightBtn { color:#8a2020; border-color:rgba(176,48,48,.45); background:rgba(176,48,48,.10); }
+body.night #nightBtn.man { border-color:rgba(176,48,48,.7); background:rgba(176,48,48,.16); }
 body.night #moonIcon { filter:grayscale(1) brightness(.4) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.9; }
 body.night #condIcon { filter:grayscale(1) brightness(.45) sepia(1) hue-rotate(-45deg) saturate(4); opacity:.85; }
 #condIcon svg { width:100%; height:100%; display:block; }
@@ -124,6 +130,7 @@ body.night #music { color:#3a0d0d; }
   <div id="app">
     <div id="topbar">
       <div class="srow mini"><svg viewBox="0 0 100 70"><g stroke="#ffb340" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 48 h60"/><path d="M35 38 a15 15 0 0 1 30 0"/><line x1="50" y1="14" x2="50" y2="22"/><line x1="26" y1="24" x2="32" y2="30"/><line x1="74" y1="24" x2="68" y2="30"/></g></svg><span class="k">Sunrise</span><span id="sunriseT"></span></div>
+      <button id="nightBtn" type="button">NIGHT</button>
       <div class="srow mini"><svg viewBox="0 0 100 70"><g stroke="#ff8a3d" stroke-width="6" stroke-linecap="round" fill="none"><path d="M20 44 h60"/><path d="M35 34 a15 15 0 0 1 30 0" opacity=".9"/><line x1="24" y1="58" x2="30" y2="52"/><line x1="76" y1="58" x2="70" y2="52"/></g></svg><span class="k">Sunset</span><span id="sunsetT"></span></div>
     </div>
     <div id="hdr">
@@ -1009,8 +1016,7 @@ function parseHM(s){ var p=s.split(":"); return {h:+p[0], m:+p[1]}; }
 var PREVIEW = null;
 if (/preview=night/.test(location.search)) PREVIEW = true;
 else if (/preview=day/.test(location.search)) PREVIEW = false;
-function isNight(d){
-  if (PREVIEW !== null) return PREVIEW;
+function scheduledNight(d){
   if (S.mode==="off") return false;
   if (S.mode==="fixed"){ var a=parseHM(S.dayStart), b=parseHM(S.dayEnd), m=d.getHours()*60+d.getMinutes(); return !(m>=a.h*60+a.m && m<b.h*60+b.m); }
   if (W && W.daily){
@@ -1019,6 +1025,15 @@ function isNight(d){
     var n=d.getTime(); return !(n>=rise && n<set);
   }
   return false;
+}
+function isNight(d){
+  if (PREVIEW !== null) return PREVIEW;
+  var sched = scheduledNight(d);
+  if (S.ov){
+    if (sched !== S.ov.from){ delete S.ov; save(); return sched; }
+    return S.ov.mode === "night";
+  }
+  return sched;
 }
 
 /* ============ clock ============ */
@@ -1042,8 +1057,14 @@ setInterval(function(){ if (T) renderTides(); }, 120000);
 
 function tick(){
   var d=new Date();
-  Scene.setNight(isNight(d));
-  document.body.classList.toggle("night", isNight(d));
+  var night = isNight(d);
+  Scene.setNight(night);
+  document.body.classList.toggle("night", night);
+  var nb = $("nightBtn");
+  if (nb){
+    nb.textContent = night ? "DAY" : "NIGHT";
+    nb.className = S.ov ? "man" : "";
+  }
 }
 setInterval(tick, 20000);
 
@@ -1072,6 +1093,12 @@ $("sSave").addEventListener("click", function(){
 });
 
 /* ============ boot ============ */
+$("nightBtn").addEventListener("click", function(){
+  if (PREVIEW !== null) return;
+  var goingNight = !document.body.classList.contains("night");
+  S.ov = { mode: goingNight ? "night" : "day", from: scheduledNight(new Date()) };
+  save(); tick();
+});
 if (S.stream) $("music").style.display = "flex";
 Scene.init();
 renderClock(); tick(); fetchWx(); fetchTides();
